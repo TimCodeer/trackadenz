@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
-const K = { USER:"trackadenz_user",LOG:"trackadenz_log",GOALS:"trackadenz_goals",STEPS:"trackadenz_steps",WORKOUT_PLANS:"trackadenz_workout_plans",WORKOUT_LOG:"trackadenz_workout_log" };
+const K = { USER:"trackadenz_user",LOG:"trackadenz_log",GOALS:"trackadenz_goals",STEPS:"trackadenz_steps",WORKOUT_PLANS:"trackadenz_workout_plans",WORKOUT_LOG:"trackadenz_workout_log",FAVS:"trackadenz_favorites" };
 
-// ─── Light palette ────────────────────────────────────────────────────────────
 const C = {
   bg:"#eef8f7", surface:"#ffffff", card:"#ffffff", border:"#cce8e4", borderStrong:"#99d6cf",
   accent:"#1fb5a5", accent2:"#178f82", accentSoft:"#dff5f2",
@@ -61,26 +60,46 @@ const MEAL_TYPES=[{id:"breakfast",label:"Frühstück",emoji:"☀️"},{id:"lunch
 function calcTDEE(u){if(!u.weight||!u.height||!u.age)return null;let bmr=u.gender==="male"?10*u.weight+6.25*u.height-5*u.age+5:10*u.weight+6.25*u.height-5*u.age-161;const m={sedentary:1.2,light:1.375,moderate:1.55,active:1.725,veryActive:1.9};let t=bmr*(m[u.activity]||1.55);if(u.goal==="lose")t-=500;else if(u.goal==="gain")t+=300;return Math.round(t);}
 function calcProt(u){if(!u?.weight)return 150;return u.goal==="gain"?Math.round(u.weight*2.2):u.goal==="lose"?Math.round(u.weight*2):Math.round(u.weight*1.8);}
 function todayKey(){return new Date().toDateString();}
+function dateKey(d){return d.toDateString();}
 function ls(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}}
 function lsSet(k,v){localStorage.setItem(k,JSON.stringify(v));}
 function searchFoods(q){if(!q||q.length<2)return[];const lq=q.toLowerCase();return FOOD_DB.filter(f=>f.name.toLowerCase().includes(lq)).slice(0,7);}
 
-// Shared style factories
-const sInput=(extra={})=>({width:"100%",background:C.surface,border:`1.5px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontSize:15,WebkitAppearance:"none",fontFamily:"inherit",...extra});
+// IMPORTANT: font-size must be >=16px on inputs to prevent iOS Safari zoom-on-focus
+const sInput=(extra={})=>({width:"100%",background:C.surface,border:`1.5px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontSize:16,WebkitAppearance:"none",fontFamily:"inherit",...extra});
 const sBtn=(variant="primary",extra={})=>{const b={borderRadius:12,padding:"13px 20px",fontSize:14,fontWeight:700,cursor:"pointer",border:"none",width:"100%",fontFamily:"inherit",...extra};if(variant==="primary")return{...b,background:`linear-gradient(135deg,${C.accent},${C.accent2})`,color:"#fff",boxShadow:`0 4px 16px ${C.accent}33`};if(variant==="ghost")return{...b,background:C.surface,color:C.textSec,border:`1.5px solid ${C.border}`};if(variant==="danger")return{...b,background:"#fff0f2",color:"#c0392b",border:"1.5px solid #f5b8c0"};return b;};
 const sCard=(extra={})=>({background:C.card,borderRadius:16,padding:"14px 16px",border:`1px solid ${C.border}`,boxShadow:C.shadow,...extra});
-const sPill=(active,color=C.accent)=>({flex:1,padding:"8px 4px",borderRadius:10,fontSize:11,fontWeight:700,background:active?color:C.surface,color:active?"#fff":C.muted,border:`1.5px solid ${active?color:C.border}`,cursor:"pointer",transition:"all .15s"});
+const sPill=(active,color=C.accent)=>({flex:1,padding:"9px 4px",borderRadius:10,fontSize:12,fontWeight:700,background:active?color:C.surface,color:active?"#fff":C.muted,border:`1.5px solid ${active?color:C.border}`,cursor:"pointer",transition:"all .15s"});
+
+// ── Dynamic ZXing loader (loads UMD from CDN when scanner opens) ────────────
+let zxingLoadPromise = null;
+function loadZXing() {
+  if (window.ZXing) return Promise.resolve(window.ZXing);
+  if (zxingLoadPromise) return zxingLoadPromise;
+  zxingLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js";
+    script.async = true;
+    script.onload = () => window.ZXing ? resolve(window.ZXing) : reject(new Error("ZXing not available"));
+    script.onerror = () => reject(new Error("ZXing script failed"));
+    document.head.appendChild(script);
+  });
+  return zxingLoadPromise;
+}
 
 export default function TrackadenZ(){
   const[user,setUser]=useState(null);
   const[onboarding,setOnboarding]=useState(false);
   const[tab,setTab]=useState("dashboard");
+  const[prevTab,setPrevTab]=useState("dashboard");
+  const[tabTransition,setTabTransition]=useState(false);
   const[log,setLog]=useState({});
   const[goals,setGoals]=useState({calories:2000,protein:150});
   const[stepsData,setStepsData]=useState({});
   const[stepsPerm,setStepsPerm]=useState(null);
   const[workoutPlans,setWorkoutPlans]=useState([]);
   const[workoutLog,setWorkoutLog]=useState({});
+  const[favorites,setFavorites]=useState([]);
   const[notif,setNotif]=useState(null);
   const[addModal,setAddModal]=useState(null);
   const[addMode,setAddMode]=useState("search");
@@ -89,6 +108,7 @@ export default function TrackadenZ(){
   const[pendingCam,setPendingCam]=useState(null);
   const[scanning,setScanning]=useState(false);
   const[scannedCode,setScannedCode]=useState("");
+  const[scanLoading,setScanLoading]=useState(false);
   const[searchQ,setSearchQ]=useState("");
   const[searchRes,setSearchRes]=useState([]);
   const[selFood,setSelFood]=useState(null);
@@ -101,13 +121,13 @@ export default function TrackadenZ(){
   const[kbUp,setKbUp]=useState(false);
   const[ob,setOb]=useState({step:0,name:"",gender:"male",age:"",weight:"",height:"",activity:"moderate",goal:"maintain",sport:"none"});
   const videoRef=useRef(null);
-  const canvasRef=useRef(null);
   const streamRef=useRef(null);
-  const scanTimerRef=useRef(null);
+  const zxingControlsRef=useRef(null);
   const fileRef=useRef();
   const barcodeInputRef=useRef();
   const searchInputRef=useRef();
   const modalBodyRef=useRef();
+  const tabAnimRef=useRef(null);
 
   useEffect(()=>{
     const u=ls(K.USER,null);
@@ -116,6 +136,36 @@ export default function TrackadenZ(){
     setLog(ls(K.LOG,{}));setStepsData(ls(K.STEPS,{}));
     setStepsPerm(ls("tz_steps_perm",null));setCamPerm(ls("tz_cam_perm",null));
     setWorkoutPlans(ls(K.WORKOUT_PLANS,[]));setWorkoutLog(ls(K.WORKOUT_LOG,{}));
+    setFavorites(ls(K.FAVS,[]));
+  },[]);
+
+  // Prevent iOS Safari pinch-zoom and double-tap zoom
+  useEffect(()=>{
+    const prevent = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
+    let lastTouch = 0;
+    const preventDoubleTap = e => {
+      const now = Date.now();
+      if (now - lastTouch <= 300) e.preventDefault();
+      lastTouch = now;
+    };
+    document.addEventListener("touchstart", prevent, { passive: false });
+    document.addEventListener("touchend", preventDoubleTap, { passive: false });
+    const preventGesture = e => e.preventDefault();
+    document.addEventListener("gesturestart", preventGesture);
+    document.addEventListener("gesturechange", preventGesture);
+    return () => {
+      document.removeEventListener("touchstart", prevent);
+      document.removeEventListener("touchend", preventDoubleTap);
+      document.removeEventListener("gesturestart", preventGesture);
+      document.removeEventListener("gesturechange", preventGesture);
+    };
+  },[]);
+
+  // Lock viewport to prevent zoom (ensures viewport meta tag has maximum-scale=1)
+  useEffect(()=>{
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) { meta = document.createElement("meta"); meta.name = "viewport"; document.head.appendChild(meta); }
+    meta.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
   },[]);
 
   // Keyboard detection
@@ -130,7 +180,17 @@ export default function TrackadenZ(){
     check();const t=setInterval(check,60000);return()=>clearInterval(t);
   },[]);
 
-  function showNotif(msg,type="ok"){setNotif({msg,type});setTimeout(()=>setNotif(null),2800);}
+  function showNotif(msg,type="ok"){setNotif({msg,type});setTimeout(()=>setNotif(null),2600);}
+
+  // Tab switch with sprinter animation
+  function switchTab(newTab){
+    if (newTab === tab) return;
+    setPrevTab(tab);
+    setTabTransition(true);
+    clearTimeout(tabAnimRef.current);
+    setTab(newTab);
+    tabAnimRef.current = setTimeout(() => setTabTransition(false), 600);
+  }
 
   // Camera
   function requestCamera(action){
@@ -149,66 +209,73 @@ export default function TrackadenZ(){
   }
   function denyCamera(){setCamModal(false);setCamPerm("denied");lsSet("tz_cam_perm","denied");setPendingCam(null);}
 
-  // GTIN/EAN Barcode Scanner
+  // ── GTIN/EAN Barcode Scanner via ZXing (works on iOS Safari!) ──────────────
   async function startScanner(){
-    setScanning(true);setScannedCode("");setAiResult(null);
-    try{
-      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}});
-      streamRef.current=stream;
-      if(videoRef.current){videoRef.current.srcObject=stream;await videoRef.current.play();}
+    setScanning(true);setScannedCode("");setAiResult(null);setScanLoading(true);
+    try {
+      const ZXing = await loadZXing();
+      setScanLoading(false);
+      const hints = new Map();
+      const formats = [
+        ZXing.BarcodeFormat.EAN_13,
+        ZXing.BarcodeFormat.EAN_8,
+        ZXing.BarcodeFormat.UPC_A,
+        ZXing.BarcodeFormat.UPC_E,
+        ZXing.BarcodeFormat.CODE_128,
+        ZXing.BarcodeFormat.CODE_39,
+        ZXing.BarcodeFormat.ITF,
+      ];
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+      const reader = new ZXing.BrowserMultiFormatReader(hints, 250);
 
-      if("BarcodeDetector" in window){
-        // Native BarcodeDetector – best for EAN-13/GTIN on Android Chrome
-        let fmts=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf","data_matrix"];
-        try{const sup=await BarcodeDetector.getSupportedFormats();fmts=fmts.filter(f=>sup.includes(f));}catch{}
-        const det=new BarcodeDetector({formats:fmts.length?fmts:["ean_13","ean_8"]});
-        const loop=async()=>{
-          if(!videoRef.current?.srcObject)return;
-          try{
-            if(videoRef.current.readyState>=2){
-              const codes=await det.detect(videoRef.current);
-              if(codes.length){stopScanner();const c=codes[0].rawValue;setScannedCode(c);lookupGTIN(c);return;}
-            }
-          }catch{}
-          scanTimerRef.current=setTimeout(loop,150);
-        };
-        scanTimerRef.current=setTimeout(loop,600);
-      } else {
-        // Fallback: grab a frame and send to Claude vision
-        scanTimerRef.current=setTimeout(async()=>{
-          if(!videoRef.current||!canvasRef.current)return;
-          const v=videoRef.current;
-          if(v.readyState<2||v.videoWidth===0){scanTimerRef.current=setTimeout(arguments.callee,500);return;}
-          const cv=canvasRef.current;cv.width=v.videoWidth;cv.height=v.videoHeight;
-          cv.getContext("2d").drawImage(v,0,0);
-          const du=cv.toDataURL("image/jpeg",0.9);
-          if(du.length<2000)return;
-          stopScanner();
-          const b64=du.split(",")[1];setAiLoading(true);
-          try{
-            const res=await callClaude(
-              `Du bist ein EAN/GTIN Barcode-Scanner. Lies den Barcode/EAN-Code im Bild und gib das Produkt zurück. Antworte NUR mit JSON: {"items":[{"name":"...","grams":100,"calories":0,"protein":0,"carbs":0,"fat":0,"emoji":"🏪"}]}`,
-              "Lies den Barcode und gib das Supermarktprodukt mit Nährwerten zurück.",
-              {type:"image/jpeg",data:b64}
-            );
-            setAiResult(res);
-          }catch{showNotif("❌ Barcode nicht erkannt","err");}
-          setAiLoading(false);
-        },2000);
+      const constraints = {
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      };
+
+      zxingControlsRef.current = await reader.decodeFromConstraints(constraints, videoRef.current, (result, err) => {
+        if (result) {
+          const code = result.getText();
+          if (code && code.length >= 6) {
+            stopScanner();
+            setScannedCode(code);
+            lookupGTIN(code);
+          }
+        }
+      });
+      // Keep a reference to the stream for cleanup
+      if (videoRef.current && videoRef.current.srcObject) {
+        streamRef.current = videoRef.current.srcObject;
       }
-    }catch{setScanning(false);showNotif("❌ Kamera nicht verfügbar","err");}
+    } catch (e) {
+      setScanning(false);
+      setScanLoading(false);
+      showNotif("❌ Scanner konnte nicht gestartet werden", "err");
+    }
   }
 
   function stopScanner(){
-    setScanning(false);clearTimeout(scanTimerRef.current);
-    if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
-    if(videoRef.current)videoRef.current.srcObject=null;
+    setScanning(false);
+    try { zxingControlsRef.current?.reset?.(); } catch {}
+    try { zxingControlsRef.current?.stop?.(); } catch {}
+    zxingControlsRef.current = null;
+    if (streamRef.current) {
+      try { streamRef.current.getTracks().forEach(t => t.stop()); } catch {}
+      streamRef.current = null;
+    }
+    if (videoRef.current && videoRef.current.srcObject) {
+      try { videoRef.current.srcObject.getTracks().forEach(t => t.stop()); } catch {}
+      videoRef.current.srcObject = null;
+    }
   }
 
   async function lookupGTIN(code){
     if(!code||code.length<6)return;
     setAiLoading(true);setAiResult(null);
-    // 1. Try Open Food Facts (free real GTIN database)
     try{
       const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
       const d=await r.json();
@@ -218,7 +285,6 @@ export default function TrackadenZ(){
         setAiLoading(false);return;
       }
     }catch{}
-    // 2. AI fallback
     try{
       const res=await callClaude(
         `Du bist eine Lebensmitteldatenbank. Identifiziere das Produkt anhand des GTIN/EAN Barcodes und gib Nährwerte zurück. Antworte NUR mit JSON: {"items":[{"name":"...","grams":100,"calories":0,"protein":0,"carbs":0,"fat":0,"emoji":"🏪"}]}`,
@@ -240,7 +306,25 @@ export default function TrackadenZ(){
   function addEntry(entry){
     const nl={...log};if(!nl[tk])nl[tk]=[];
     nl[tk]=[...nl[tk],{...entry,id:Date.now(),time:new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}];
-    setLog(nl);lsSet(K.LOG,nl);closeModal();showNotif("✅ Mahlzeit eingetragen!");
+    setLog(nl);lsSet(K.LOG,nl);
+
+    // Track in favorites - keep most-used items
+    const favKey = `${entry.emoji}|${entry.name}|${entry.grams}`;
+    const existing = favorites.find(f => f.key === favKey);
+    const newFavs = existing
+      ? favorites.map(f => f.key === favKey ? {...f, count:f.count+1, lastUsed:Date.now()} : f)
+      : [...favorites, {key:favKey,name:entry.name,emoji:entry.emoji,grams:entry.grams,calories:entry.calories,protein:entry.protein,carbs:entry.carbs,fat:entry.fat,count:1,lastUsed:Date.now()}];
+    setFavorites(newFavs);lsSet(K.FAVS,newFavs);
+
+    closeModal();showNotif("✅ Mahlzeit eingetragen!");
+  }
+  function addFromFavorite(fav){
+    addEntry({name:fav.name,emoji:fav.emoji,grams:fav.grams,mealType:addModal?.mealType||"snack",calories:fav.calories,protein:fav.protein,carbs:fav.carbs,fat:fav.fat});
+  }
+  function removeFavorite(key){
+    const newFavs = favorites.filter(f => f.key !== key);
+    setFavorites(newFavs);lsSet(K.FAVS,newFavs);
+    showNotif("🗑️ Favorit entfernt","err");
   }
   function removeEntry(id){const nl={...log,[tk]:(log[tk]||[]).filter(e=>e.id!==id)};setLog(nl);lsSet(K.LOG,nl);showNotif("🗑️ Entfernt","err");}
   function closeModal(){setAddModal(null);setSelFood(null);setSearchQ("");setSearchRes([]);setGrams(100);setAiInput("");setAiResult(null);setImgFile(null);setImgPreview(null);stopScanner();setScannedCode("");}
@@ -265,20 +349,40 @@ export default function TrackadenZ(){
   function requestSteps(){if("DeviceMotionEvent" in window&&typeof DeviceMotionEvent.requestPermission==="function"){DeviceMotionEvent.requestPermission().then(res=>{const ok=res==="granted";setStepsPerm(ok?"granted":"denied");lsSet("tz_steps_perm",ok?"granted":"denied");if(ok)showNotif("✅ Schrittzähler aktiv!");});}else{setStepsPerm("granted");lsSet("tz_steps_perm","granted");showNotif("✅ Schrittzähler aktiv!");}}
   function logSteps(n){const s={...stepsData,[tk]:n};setStepsData(s);lsSet(K.STEPS,s);}
 
+  // Week overview (last 7 days incl. today)
+  const last7Days = Array.from({length:7}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6-i));
+    const key = dateKey(d);
+    const entries = log[key] || [];
+    return {
+      date: d,
+      key,
+      label: d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0,2),
+      dayNum: d.getDate(),
+      calories: Math.round(entries.reduce((s,e) => s+e.calories, 0)),
+      protein: +entries.reduce((s,e) => s+e.protein, 0).toFixed(0),
+      isToday: key === tk,
+    };
+  });
+  const weekTotalCal = last7Days.reduce((s,d) => s+d.calories, 0);
+  const weekAvgCal = Math.round(weekTotalCal/7);
+
   const historyDays=Object.entries(log).sort((a,b)=>new Date(b[0])-new Date(a[0])).slice(0,30).map(([dk,entries])=>({dk,calories:Math.round(entries.reduce((s,e)=>s+e.calories,0)),protein:+entries.reduce((s,e)=>s+e.protein,0).toFixed(1),carbs:+entries.reduce((s,e)=>s+e.carbs,0).toFixed(1),fat:+entries.reduce((s,e)=>s+e.fat,0).toFixed(1),isToday:dk===tk}));
   const mealsByType=MEAL_TYPES.map(mt=>({...mt,entries:todayE.filter(e=>e.mealType===mt.id)}));
   function saveWP(p){setWorkoutPlans(p);lsSet(K.WORKOUT_PLANS,p);}
   function saveWL(w){setWorkoutLog(w);lsSet(K.WORKOUT_LOG,w);}
   const bmi=user?.weight&&user?.height?(user.weight/((user.height/100)**2)).toFixed(1):null;
   const navItems=[{id:"dashboard",icon:"⚡",label:"Heute"},{id:"log",icon:"🍽️",label:"Mahlzeiten"},{id:"history",icon:"📊",label:"Verlauf"},{id:"workout",icon:"🏋️",label:"Training"},{id:"profile",icon:"👤",label:"Profil"}];
+  const sprinterEmoji = user?.gender === "female" ? "🏃‍♀️" : "🏃";
 
-  // ─── ONBOARDING ─────────────────────────────────────────────────────────────
+  const topFavorites = [...favorites].sort((a,b) => b.count - a.count).slice(0,6);
+
   if(onboarding){
     const steps=[{title:"Hallo! 👋",sub:"Wie heißt du?"},{title:"Dein Körper 📏",sub:"Zur Kalorien-Berechnung"},{title:"Dein Ziel 🎯",sub:"Was möchtest du erreichen?"},{title:"Aktivität 🏃",sub:"Wie viel bewegst du dich?"}];
     const pct=((ob.step+1)/steps.length)*100;
     return(
       <div style={{fontFamily:"'DM Sans',sans-serif",background:`linear-gradient(150deg,${C.accentSoft} 0%,${C.bg} 50%,${C.blueSoft} 100%)`,minHeight:"100svh",maxWidth:480,margin:"0 auto",display:"flex",flexDirection:"column"}}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0}input:focus,textarea:focus{outline:2px solid ${C.accent};outline-offset:1px;border-color:${C.accent}!important}button{cursor:pointer;border:none;font-family:inherit}@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;touch-action:manipulation}html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none}input,textarea{-webkit-user-select:text;user-select:text;font-size:16px!important}input:focus,textarea:focus{outline:2px solid ${C.accent};outline-offset:1px;border-color:${C.accent}!important}button{cursor:pointer;border:none;font-family:inherit;-webkit-tap-highlight-color:transparent}@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
         <div style={{flex:1,overflowY:"auto",padding:"32px 22px 16px"}}>
           <div style={{textAlign:"center",marginBottom:28}}>
             <div style={{fontFamily:"'Syne',sans-serif",fontSize:28,fontWeight:800,color:C.text}}>Trackaden<span style={{color:C.accent}}>Z</span></div>
@@ -318,29 +422,44 @@ export default function TrackadenZ(){
     );
   }
 
-  // ─── MAIN APP ────────────────────────────────────────────────────────────────
   return(
     <div style={{fontFamily:"'DM Sans',sans-serif",background:C.bg,minHeight:"100svh",maxWidth:480,margin:"0 auto",color:C.text,display:"flex",flexDirection:"column",position:"relative"}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
+        *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;touch-action:manipulation}
+        html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;overflow:hidden}
+        input,textarea{-webkit-user-select:text;user-select:text;font-size:16px!important}
         input:focus,textarea:focus{outline:2px solid ${C.accent};outline-offset:1px;border-color:${C.accent}!important}
-        button{cursor:pointer;border:none;font-family:inherit}
+        button{cursor:pointer;border:none;font-family:inherit;-webkit-tap-highlight-color:transparent}
         ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:${C.dim};border-radius:2px}
         @keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-        @keyframes scanLine{0%,100%{transform:translateY(-26px);opacity:.3}50%{transform:translateY(26px);opacity:1}}
+        @keyframes scanLine{0%,100%{transform:translateY(-28px);opacity:.3}50%{transform:translateY(28px);opacity:1}}
+        @keyframes sprintAcross{0%{transform:translateX(-120%) scale(.9);opacity:0}15%{opacity:1}80%{opacity:1}100%{transform:translateX(120vw) scale(1.1);opacity:0}}
+        @keyframes sprintTrail{0%{opacity:0;transform:translateX(-120%)}20%{opacity:.4}100%{opacity:0;transform:translateX(120vw)}}
+        @keyframes tabFade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
         .anim{animation:slideUp .22s ease}.fade{animation:fadeIn .22s ease}
-        input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+        .tab-content{animation:tabFade .35s ease}
+        input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+        input[type=number]{-moz-appearance:textfield}
         textarea{resize:none;line-height:1.5}
       `}</style>
 
-      {/* Toast */}
+      {/* Sprinter tab animation overlay */}
+      {tabTransition && (
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,pointerEvents:"none",zIndex:500,overflow:"hidden"}}>
+          <div style={{position:"absolute",top:"50%",left:0,transform:"translateY(-50%)",fontSize:52,animation:"sprintAcross .6s cubic-bezier(0.4, 0, 0.2, 1) forwards",filter:`drop-shadow(0 4px 12px ${C.accent}66)`,willChange:"transform"}}>
+            {sprinterEmoji}
+          </div>
+          <div style={{position:"absolute",top:"calc(50% + 4px)",left:0,transform:"translateY(-50%)",height:3,width:80,background:`linear-gradient(90deg,transparent,${C.accent},transparent)`,borderRadius:2,animation:"sprintTrail .6s cubic-bezier(0.4,0,0.2,1) forwards"}}/>
+        </div>
+      )}
+
       {notif&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:notif.type==="err"?"#fff0f2":"#e6faf7",border:`1px solid ${notif.type==="err"?"#f5b8c0":C.borderStrong}`,color:notif.type==="err"?"#c0392b":C.accent2,padding:"10px 20px",borderRadius:12,fontSize:13,fontWeight:700,zIndex:9999,whiteSpace:"nowrap",boxShadow:C.shadowMd,animation:"slideUp .2s ease"}}>{notif.msg}</div>}
 
       {/* Header */}
-      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"13px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 1px 8px rgba(31,181,165,0.07)"}}>
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"calc(env(safe-area-inset-top,0) + 10px) 18px 13px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0,zIndex:100,boxShadow:"0 1px 8px rgba(31,181,165,0.07)"}}>
         <div>
           <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:C.text}}>Trackaden<span style={{color:C.accent}}>Z</span></div>
           <div style={{fontSize:11,color:C.muted}}>{new Date().toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})}</div>
@@ -349,15 +468,14 @@ export default function TrackadenZ(){
       </div>
 
       {/* Content */}
-      <div style={{flex:1,overflowY:"auto",padding:"14px 14px 82px",WebkitOverflowScrolling:"touch"}}>
+      <div key={tab} className="tab-content" style={{flex:1,overflowY:"auto",padding:"14px 14px 82px",WebkitOverflowScrolling:"touch"}}>
 
         {/* DASHBOARD */}
-        {tab==="dashboard"&&<div className="fade">
+        {tab==="dashboard"&&<div>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:16,fontWeight:700}}>Hey {user?.name} 👋</div>
             <div style={{fontSize:12,color:C.muted}}>{goals.calories-Math.round(totals.calories)>0?`Noch ${goals.calories-Math.round(totals.calories)} kcal verfügbar`:"🎉 Tagesziel erreicht!"}</div>
           </div>
-          {/* Calorie card */}
           <div style={{...sCard({background:`linear-gradient(135deg,${C.accentSoft},${C.blueSoft})`,marginBottom:12})}}>
             <div style={{display:"flex",alignItems:"center",gap:16}}>
               <div style={{position:"relative",flexShrink:0}}>
@@ -383,6 +501,46 @@ export default function TrackadenZ(){
               </div>
             </div>
           </div>
+
+          {/* WEEK OVERVIEW */}
+          <div style={{...sCard({marginBottom:12})}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div>
+                <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:.5}}>DIESE WOCHE</div>
+                <div style={{fontSize:11,color:C.textSec,marginTop:1}}>Ø {weekAvgCal} kcal/Tag</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontFamily:"'Syne',sans-serif",fontSize:18,fontWeight:800,color:C.accent}}>{weekTotalCal.toLocaleString("de-DE")}</div>
+                <div style={{fontSize:9,color:C.muted,fontWeight:600}}>kcal gesamt</div>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"flex-end",gap:5,height:72,marginBottom:6}}>
+              {(() => {
+                const maxCal = Math.max(goals.calories * 1.2, ...last7Days.map(d => d.calories), 100);
+                return last7Days.map((d,i) => {
+                  const h = Math.max(4, (d.calories/maxCal)*60);
+                  const goalH = (goals.calories/maxCal)*60;
+                  const over = d.calories > goals.calories;
+                  return (
+                    <div key={d.key} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3,position:"relative"}}>
+                      <div style={{position:"relative",width:"100%",height:60,display:"flex",alignItems:"flex-end"}}>
+                        {d.calories > 0 && <div style={{position:"absolute",bottom:goalH,left:0,right:0,height:1,background:C.dim,zIndex:0,opacity:0.6}}/>}
+                        <div style={{width:"100%",borderRadius:"4px 4px 0 0",background:d.calories===0?C.border:over?"#e05c5c":d.isToday?`linear-gradient(180deg,${C.accent},${C.accent2})`:C.borderStrong,height:`${h}px`,transition:"height .5s",position:"relative",zIndex:1}}/>
+                      </div>
+                      <div style={{fontSize:10,fontWeight:d.isToday?800:600,color:d.isToday?C.accent:C.muted,textTransform:"uppercase"}}>{d.label}</div>
+                      <div style={{fontSize:9,color:C.muted}}>{d.dayNum}</div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+            <div style={{display:"flex",gap:10,fontSize:9,color:C.muted,marginTop:6,flexWrap:"wrap"}}>
+              <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:C.accent,display:"inline-block"}}/>Heute</span>
+              <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:C.borderStrong,display:"inline-block"}}/>Im Ziel</span>
+              <span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#e05c5c",display:"inline-block"}}/>Über Ziel</span>
+            </div>
+          </div>
+
           {/* Steps */}
           <div style={{...sCard({marginBottom:12})}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -395,10 +553,10 @@ export default function TrackadenZ(){
             {stepsPerm==="granted"&&<div style={{marginTop:10}}>
               <div style={{height:5,background:C.border,borderRadius:3,marginBottom:8,overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:`linear-gradient(90deg,${C.olive},${C.accent})`,width:`${Math.min(100,(todaySteps/10000)*100)}%`,transition:"width .5s"}}/></div>
               <div style={{display:"flex",gap:6,marginBottom:8}}>{[2000,5000,8000,10000].map(n=><button key={n} onClick={()=>logSteps(n)} style={{flex:1,background:todaySteps===n?C.oliveSoft:C.bg,border:`1px solid ${todaySteps===n?C.olive:C.border}`,borderRadius:7,padding:"5px 0",fontSize:11,fontWeight:700,color:todaySteps===n?C.olive:C.muted}}>{n>=1000?`${n/1000}k`:n}</button>)}</div>
-              <input type="number" inputMode="numeric" placeholder="Eigene Schrittzahl" onBlur={e=>{if(e.target.value){logSteps(Number(e.target.value));e.target.value="";}}} style={sInput({fontSize:13,padding:"9px 12px"})}/>
+              <input type="number" inputMode="numeric" placeholder="Eigene Schrittzahl" onBlur={e=>{if(e.target.value){logSteps(Number(e.target.value));e.target.value="";}}} style={sInput({padding:"9px 12px"})}/>
             </div>}
           </div>
-          {/* Quick add */}
+
           <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:.6,marginBottom:8}}>SCHNELL HINZUFÜGEN</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
             {MEAL_TYPES.map(mt=><button key={mt.id} onClick={()=>{setAddModal({mealType:mt.id});setAddMode("search");}} style={{background:C.surface,border:`1.5px solid ${C.border}`,borderRadius:14,padding:"13px 14px",display:"flex",alignItems:"center",gap:10,color:C.text,fontSize:13,fontWeight:600,boxShadow:C.shadow,textAlign:"left"}}><span style={{fontSize:20}}>{mt.emoji}</span>{mt.label}</button>)}
@@ -406,7 +564,7 @@ export default function TrackadenZ(){
         </div>}
 
         {/* LOG */}
-        {tab==="log"&&<div className="fade">
+        {tab==="log"&&<div>
           {mealsByType.map(mt=><div key={mt.id} style={{marginBottom:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",gap:7}}>
@@ -418,15 +576,40 @@ export default function TrackadenZ(){
             </div>
             {mt.entries.length===0?<div style={{background:C.surface,borderRadius:12,padding:14,color:C.dim,fontSize:12,textAlign:"center",border:`1.5px dashed ${C.border}`}}>Noch nichts eingetragen</div>:mt.entries.map(e=><div key={e.id} className="anim" style={{...sCard({marginBottom:7}),display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:22}}>{e.emoji}</span>
-              <div style={{flex:1}}><div style={{fontSize:13,fontWeight:600}}>{e.name}</div><div style={{fontSize:11,color:C.muted}}>{e.grams}g · {e.time}</div></div>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.name}</div><div style={{fontSize:11,color:C.muted}}>{e.grams}g · {e.time}</div></div>
               <div style={{textAlign:"right"}}><div style={{fontSize:14,fontWeight:800,color:C.accent}}>{e.calories} kcal</div><div style={{fontSize:10,color:C.pink,fontWeight:700}}>{e.protein}g P</div></div>
-              <button onClick={()=>removeEntry(e.id)} style={{background:"none",color:C.dim,fontSize:16,padding:"3px 6px",borderRadius:6}} onMouseEnter={ev=>ev.target.style.color="#c0392b"} onMouseLeave={ev=>ev.target.style.color=C.dim}>✕</button>
+              <button onClick={()=>removeEntry(e.id)} style={{background:"none",color:C.dim,fontSize:16,padding:"3px 6px",borderRadius:6}}>✕</button>
             </div>)}
           </div>)}
+
+          {/* FAVORITES SECTION */}
+          {topFavorites.length > 0 && (
+            <div style={{marginTop:24}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:.6}}>⭐ DEINE FAVORITEN</div>
+                <div style={{fontSize:10,color:C.dim}}>{topFavorites.length} {topFavorites.length===1?"Eintrag":"Einträge"}</div>
+              </div>
+              <div style={{fontSize:11,color:C.muted,marginBottom:10}}>Tippe zum schnellen Wiederholen</div>
+              {topFavorites.map(fav => (
+                <div key={fav.key} style={{...sCard({marginBottom:7,padding:"11px 14px"}),display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{fontSize:22}}>{fav.emoji}</span>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fav.name}</div>
+                    <div style={{fontSize:10,color:C.muted}}>{fav.grams}g · {fav.count}× gegessen · {fav.calories} kcal</div>
+                  </div>
+                  <button onClick={() => {
+                    if (addModal) addFromFavorite(fav);
+                    else { setAddModal({mealType:"snack"}); setTimeout(() => addFromFavorite(fav), 50); }
+                  }} style={{background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:8,color:C.accent,padding:"6px 12px",fontSize:12,fontWeight:700,flexShrink:0}}>+ Add</button>
+                  <button onClick={() => removeFavorite(fav.key)} style={{background:"none",color:C.dim,fontSize:14,padding:"3px 5px",flexShrink:0}}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>}
 
         {/* HISTORY */}
-        {tab==="history"&&<div className="fade">
+        {tab==="history"&&<div>
           <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:.6,marginBottom:12}}>LETZTE 30 TAGE</div>
           {historyDays.length===0?<div style={{...sCard(),textAlign:"center",padding:40,color:C.dim}}><div style={{fontSize:40,marginBottom:10}}>📊</div>Noch keine Daten</div>:<>
             {historyDays.length>=2&&(()=>{const avg={cal:Math.round(historyDays.reduce((s,d)=>s+d.calories,0)/historyDays.length),prot:+(historyDays.reduce((s,d)=>s+d.protein,0)/historyDays.length).toFixed(1)};return<div style={{...sCard({background:C.accentSoft,border:`1px solid ${C.borderStrong}`,marginBottom:12}),display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}><div><div style={{fontSize:10,color:C.muted,fontWeight:700}}>Ø KALORIEN/TAG</div><div style={{fontFamily:"'Syne',sans-serif",fontSize:21,fontWeight:800,color:C.accent}}>{avg.cal}<span style={{fontSize:11,fontWeight:400}}> kcal</span></div></div><div><div style={{fontSize:10,color:C.muted,fontWeight:700}}>Ø PROTEIN/TAG</div><div style={{fontFamily:"'Syne',sans-serif",fontSize:21,fontWeight:800,color:C.pink}}>{avg.prot}<span style={{fontSize:11,fontWeight:400}}>g</span></div></div></div>;})()}
@@ -447,10 +630,9 @@ export default function TrackadenZ(){
         {tab==="profile"&&user&&<ProfileTab user={user} goals={goals} bmi={bmi} stepsPerm={stepsPerm} requestSteps={requestSteps} setGoals={setGoals} showNotif={showNotif}/>}
       </div>
 
-      {/* Bottom Nav */}
       {!kbUp&&<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"rgba(255,255,255,.97)",backdropFilter:"blur(12px)",borderTop:`1px solid ${C.border}`,display:"flex",padding:"6px 0 max(10px,env(safe-area-inset-bottom,10px))",zIndex:200}}>
-        {navItems.map(n=><button key={n.id} onClick={()=>setTab(n.id)} style={{flex:1,background:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"3px 0"}}>
-          <span style={{fontSize:20,opacity:tab===n.id?1:.3,transition:"opacity .15s"}}>{n.icon}</span>
+        {navItems.map(n=><button key={n.id} onClick={()=>switchTab(n.id)} style={{flex:1,background:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"3px 0"}}>
+          <span style={{fontSize:20,opacity:tab===n.id?1:.3,transition:"opacity .15s",transform:tab===n.id?"scale(1.1)":"scale(1)"}}>{n.icon}</span>
           <span style={{fontSize:9,fontWeight:700,letterSpacing:.3,color:tab===n.id?C.accent:C.muted}}>{n.label}</span>
           {tab===n.id&&<div style={{width:16,height:2.5,background:C.accent,borderRadius:2}}/>}
         </button>)}
@@ -459,24 +641,21 @@ export default function TrackadenZ(){
       {/* ADD FOOD MODAL */}
       {addModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:1000,display:"flex",alignItems:"flex-end",animation:"fadeIn .15s ease"}} onClick={e=>{if(e.target===e.currentTarget)closeModal();}}>
         <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:C.surface,borderRadius:"22px 22px 0 0",display:"flex",flexDirection:"column",maxHeight:"93svh",boxShadow:"0 -4px 32px rgba(31,181,165,0.14)",animation:"slideUp .22s ease"}}>
-          {/* Modal header – sticky */}
           <div style={{padding:"15px 16px 11px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:11}}>
               <div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:C.text}}>{MEAL_TYPES.find(m=>m.id===addModal.mealType)?.emoji} {MEAL_TYPES.find(m=>m.id===addModal.mealType)?.label}</div>
               <button onClick={closeModal} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"4px 10px",fontSize:14}}>✕</button>
             </div>
             <div style={{display:"flex",gap:6}}>
-              {[{id:"search",l:"🔍 Suche"},{id:"ai",l:"🤖 KI"},{id:"image",l:"📸 Foto"},{id:"barcode",l:"▦ Scan"}].map(m=><button key={m.id} onClick={()=>{if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}setAddMode(m.id);setAiResult(null);if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();}} style={sPill(addMode===m.id,C.accent)}>{m.l}</button>)}
+              {[{id:"search",l:"🔍 Suche"},{id:"favorites",l:"⭐ Favoriten"},{id:"ai",l:"🤖 KI"},{id:"image",l:"📸 Foto"},{id:"barcode",l:"▦ Scan"}].map(m=><button key={m.id} onClick={()=>{if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}setAddMode(m.id);setAiResult(null);if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();}} style={{...sPill(addMode===m.id,C.accent),fontSize:10}}>{m.l}</button>)}
             </div>
           </div>
 
-          {/* Modal scrollable body */}
           <div ref={modalBodyRef} style={{overflowY:"auto",padding:"13px 16px 28px",flex:1,WebkitOverflowScrolling:"touch"}}>
 
             {/* SEARCH */}
             {addMode==="search"&&<div>
-              <input ref={searchInputRef} autoFocus value={searchQ} onChange={e=>handleSearch(e.target.value)} placeholder="z.B. Hühnchen, Reis, Quark…" style={sInput({marginBottom:10})}
-                onFocus={()=>setTimeout(()=>{modalBodyRef.current?.scrollTo({top:0,behavior:"smooth"});},350)}/>
+              <input ref={searchInputRef} autoFocus value={searchQ} onChange={e=>handleSearch(e.target.value)} placeholder="z.B. Hühnchen, Reis, Quark…" style={sInput({marginBottom:10})} onFocus={()=>setTimeout(()=>modalBodyRef.current?.scrollTo({top:0,behavior:"smooth"}),350)}/>
               {searchRes.map(food=><button key={food.name} onClick={()=>handleSelectFood(food)} style={{width:"100%",background:selFood?.name===food.name?C.accentSoft:C.bg,border:`1.5px solid ${selFood?.name===food.name?C.accent:C.border}`,borderRadius:11,padding:"10px 14px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",color:C.text}}>
                 <span style={{fontSize:13,fontWeight:600}}>{food.emoji} {food.name}</span>
                 <span style={{fontSize:11,color:C.muted}}>{food.calories} kcal/100g</span>
@@ -485,13 +664,38 @@ export default function TrackadenZ(){
                 <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>{selFood.emoji} {selFood.name}</div>
                 <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
                   <label style={{fontSize:12,color:C.textSec,fontWeight:700,flexShrink:0}}>Menge (g):</label>
-                  <input type="number" inputMode="decimal" value={grams} onChange={e=>setGrams(Number(e.target.value))} style={sInput({flex:1,fontSize:16,fontWeight:700})}/>
+                  <input type="number" inputMode="decimal" value={grams} onChange={e=>setGrams(Number(e.target.value))} style={sInput({flex:1,fontWeight:700})}/>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:12}}>
                   {[{l:"Kcal",v:n.calories,c:C.accent},{l:"Prot.",v:`${n.protein}g`,c:C.pink},{l:"Carbs",v:`${n.carbs}g`,c:C.yellow},{l:"Fett",v:`${n.fat}g`,c:C.olive}].map(s=><div key={s.l} style={{background:C.surface,borderRadius:9,padding:"8px",textAlign:"center",border:`1px solid ${C.border}`}}><div style={{fontSize:14,fontWeight:800,color:s.c}}>{s.v}</div><div style={{fontSize:9,color:C.muted,fontWeight:700}}>{s.l}</div></div>)}
                 </div>
                 <button onClick={handleAddSearch} style={sBtn("primary")}>✅ Hinzufügen</button>
               </div>;})()}
+            </div>}
+
+            {/* FAVORITES */}
+            {addMode==="favorites"&&<div>
+              {topFavorites.length === 0 ? (
+                <div style={{background:C.bg,borderRadius:14,padding:36,textAlign:"center",color:C.dim,border:`1.5px dashed ${C.border}`}}>
+                  <div style={{fontSize:40,marginBottom:8}}>⭐</div>
+                  <div style={{fontSize:14,fontWeight:700,color:C.textSec,marginBottom:4}}>Noch keine Favoriten</div>
+                  <div style={{fontSize:12,color:C.muted}}>Deine häufig eingetragenen Mahlzeiten erscheinen hier automatisch</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{fontSize:11,color:C.muted,marginBottom:10}}>Tippe für schnelles Hinzufügen</div>
+                  {topFavorites.map(fav => (
+                    <div key={fav.key} style={{background:C.bg,borderRadius:11,padding:"10px 14px",marginBottom:7,border:`1.5px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:22}}>{fav.emoji}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fav.name}</div>
+                        <div style={{fontSize:10,color:C.muted}}>{fav.grams}g · {fav.calories} kcal · {fav.count}×</div>
+                      </div>
+                      <button onClick={() => addFromFavorite(fav)} style={{background:`linear-gradient(135deg,${C.accent},${C.accent2})`,border:"none",borderRadius:9,color:"#fff",padding:"8px 14px",fontSize:12,fontWeight:700,flexShrink:0}}>+ Add</button>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>}
 
             {/* AI TEXT */}
@@ -515,19 +719,19 @@ export default function TrackadenZ(){
               </div>}
             </div>}
 
-            {/* BARCODE – GTIN Scanner */}
+            {/* BARCODE – ZXing iOS Scanner */}
             {addMode==="barcode"&&<div>
               <div style={{position:"relative",borderRadius:16,overflow:"hidden",background:"#111",marginBottom:12,aspectRatio:"4/3",maxHeight:"45svh"}}>
-                <video ref={videoRef} style={{width:"100%",height:"100%",objectFit:"cover",display:scanning?"block":"none"}} playsInline muted/>
-                <canvas ref={canvasRef} style={{display:"none"}}/>
-                {scanning&&<>
+                <video ref={videoRef} style={{width:"100%",height:"100%",objectFit:"cover",display:(scanning||scanLoading)?"block":"none"}} playsInline muted autoPlay/>
+                {scanning&&!scanLoading&&<>
                   <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
                     {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h],i)=><div key={i} style={{position:"absolute",width:28,height:28,[v]:18,[h]:18,borderTop:v==="top"?`3px solid ${C.accent}`:"none",borderBottom:v==="bottom"?`3px solid ${C.accent}`:"none",borderLeft:h==="left"?`3px solid ${C.accent}`:"none",borderRight:h==="right"?`3px solid ${C.accent}`:"none",borderRadius:3}}/>)}
                     <div style={{width:"65%",height:2,background:`linear-gradient(90deg,transparent,${C.accent},transparent)`,animation:"scanLine 1.8s ease-in-out infinite"}}/>
                   </div>
                   <div style={{position:"absolute",bottom:10,left:0,right:0,textAlign:"center"}}><span style={{background:"rgba(0,0,0,.55)",color:"#fff",fontSize:11,fontWeight:700,padding:"4px 14px",borderRadius:20}}>EAN / GTIN in den Rahmen halten</span></div>
                 </>}
-                {!scanning&&!aiLoading&&!aiResult&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:50,marginBottom:8}}>▦</div><div style={{fontSize:13,color:"#999"}}>Kamera bereit</div></div>}
+                {scanLoading&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#111"}}><div style={{fontSize:34,marginBottom:8,animation:"pulse 1s infinite"}}>⚙️</div><div style={{fontSize:13,color:C.accent,fontWeight:700}}>Scanner wird geladen…</div></div>}
+                {!scanning&&!scanLoading&&!aiLoading&&!aiResult&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:50,marginBottom:8}}>▦</div><div style={{fontSize:13,color:"#999"}}>Scanner bereit</div></div>}
                 {aiLoading&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#111"}}><div style={{fontSize:34,marginBottom:8,animation:"pulse 1s infinite"}}>🔍</div><div style={{fontSize:13,color:C.accent,fontWeight:700}}>Produkt wird gesucht…</div>{scannedCode&&<div style={{fontSize:10,color:"#aaa",marginTop:4}}>GTIN: {scannedCode}</div>}</div>}
               </div>
               <div style={{display:"flex",gap:8,marginBottom:12}}>
@@ -536,7 +740,7 @@ export default function TrackadenZ(){
               <div style={{background:C.bg,borderRadius:12,padding:"12px 14px",border:`1px solid ${C.border}`,marginBottom:12}}>
                 <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:8,letterSpacing:.5}}>ODER GTIN / EAN MANUELL EINGEBEN</div>
                 <div style={{display:"flex",gap:8}}>
-                  <input ref={barcodeInputRef} type="number" inputMode="numeric" placeholder="z.B. 4008400401805" style={sInput({flex:1,fontSize:13,padding:"10px 12px"})} onKeyDown={e=>{if(e.key==="Enter"&&barcodeInputRef.current?.value?.length>=6){setScannedCode(barcodeInputRef.current.value);lookupGTIN(barcodeInputRef.current.value);}}}/>
+                  <input ref={barcodeInputRef} type="number" inputMode="numeric" placeholder="z.B. 4008400401805" style={sInput({flex:1,padding:"10px 12px"})} onKeyDown={e=>{if(e.key==="Enter"&&barcodeInputRef.current?.value?.length>=6){setScannedCode(barcodeInputRef.current.value);lookupGTIN(barcodeInputRef.current.value);}}}/>
                   <button onClick={()=>{if(barcodeInputRef.current?.value?.length>=6){setScannedCode(barcodeInputRef.current.value);lookupGTIN(barcodeInputRef.current.value);}}} style={{background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:10,color:C.accent,padding:"0 14px",fontSize:13,fontWeight:700,flexShrink:0}}>Suchen</button>
                 </div>
               </div>
@@ -547,7 +751,7 @@ export default function TrackadenZ(){
                 </div>)}
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
                   <label style={{fontSize:12,color:C.textSec,fontWeight:700,flexShrink:0}}>Menge (g):</label>
-                  <input type="number" inputMode="decimal" value={grams} onChange={e=>setGrams(Number(e.target.value))} style={sInput({flex:1,fontSize:16,fontWeight:700})}/>
+                  <input type="number" inputMode="decimal" value={grams} onChange={e=>setGrams(Number(e.target.value))} style={sInput({flex:1,fontWeight:700})}/>
                 </div>
                 <button onClick={()=>{const item=aiResult.items[0];if(!item)return;const r=grams/100;addEntry({name:item.name,emoji:item.emoji||"🏪",grams,mealType:addModal?.mealType||"snack",calories:Math.round(item.calories*r),protein:+(item.protein*r).toFixed(1),carbs:+((item.carbs||0)*r).toFixed(1),fat:+((item.fat||0)*r).toFixed(1)});}} style={sBtn("primary")}>✅ Hinzufügen</button>
               </div>}
@@ -556,7 +760,6 @@ export default function TrackadenZ(){
         </div>
       </div>}
 
-      {/* CAMERA PERMISSION MODAL */}
       {camModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.35)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center",padding:22,animation:"fadeIn .15s ease"}}>
         <div style={{background:C.surface,borderRadius:22,padding:26,width:"100%",maxWidth:340,boxShadow:C.shadowMd,textAlign:"center",animation:"slideUp .22s ease",border:`1px solid ${C.border}`}}>
           <div style={{fontSize:50,marginBottom:14}}>📷</div>
@@ -573,9 +776,6 @@ export default function TrackadenZ(){
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// WORKOUT TAB
-// ─────────────────────────────────────────────────────────────────────────────
 function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,showNotif}){
   const[view,setView]=useState("plans");
   const[sel,setSel]=useState(null);
@@ -584,7 +784,7 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
   const[dayIdx,setDayIdx]=useState(0);
   const[sw,setSw]=useState({});
   const emos=["🏋️","💪","🦵","🔥","⚡","🎯","🤸","🏃","🚴","🧗","🥊","🤼"];
-  const iS={width:"100%",background:C.bg,border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:13,marginBottom:8,fontFamily:"'DM Sans',sans-serif"};
+  const iS={width:"100%",background:C.bg,border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:16,marginBottom:8,fontFamily:"'DM Sans',sans-serif"};
 
   const createPlan=()=>{if(!newPlan.name.trim())return;saveWorkoutPlans([...workoutPlans,{...newPlan,id:Date.now(),createdAt:new Date().toISOString()}]);setView("plans");setNewPlan({name:"",days:[{name:"Tag A",exercises:[]}]});showNotif("✅ Plan erstellt!");};
   const delPlan=id=>{saveWorkoutPlans(workoutPlans.filter(p=>p.id!==id));showNotif("🗑️ Gelöscht","err");};
@@ -594,7 +794,7 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
   const last14=Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));const key=d.toDateString();return{label:d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}),count:(workoutLog[key]||[]).length};});
   const maxC=Math.max(1,...last14.map(d=>d.count));
 
-  if(view==="create")return<div className="fade">
+  if(view==="create")return<div>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}><button onClick={()=>setView("plans")} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,color:C.textSec,padding:"6px 12px",fontSize:13}}>← Zurück</button><div style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800}}>Neuer Plan</div></div>
     <input style={iS} placeholder="Planname (z.B. Push/Pull/Legs)" value={newPlan.name} onChange={e=>setNewPlan(p=>({...p,name:e.target.value}))} autoFocus/>
     <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:8}}>TRAININGSTAGE</div>
@@ -603,12 +803,12 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
     <button onClick={createPlan} disabled={!newPlan.name.trim()} style={{width:"100%",background:`linear-gradient(135deg,${C.accent},${C.accent2})`,borderRadius:12,padding:13,color:"#fff",fontSize:14,fontWeight:700,opacity:!newPlan.name.trim()?.5:1}}>✅ Plan erstellen</button>
   </div>;
 
-  if(view==="detail"&&sel)return<div className="fade">
+  if(view==="detail"&&sel)return<div>
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><button onClick={()=>{setView("plans");setSel(null);}} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,color:C.textSec,padding:"6px 12px",fontSize:13}}>← Zurück</button><div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800,flex:1}}>{sel.name}</div><button onClick={()=>setView("logSession")} style={{background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:9,color:C.accent,padding:"6px 12px",fontSize:12,fontWeight:700}}>▶ Start</button></div>
     <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto"}}>{sel.days.map((day,i)=><button key={i} onClick={()=>setDayIdx(i)} style={{flexShrink:0,padding:"6px 14px",borderRadius:9,fontSize:12,fontWeight:700,background:dayIdx===i?C.accent:C.bg,color:dayIdx===i?"#fff":C.muted,border:`1.5px solid ${dayIdx===i?C.accent:C.border}`}}>{day.name}</button>)}</div>
     {(sel.days[dayIdx].exercises||[]).map(ex=><div key={ex.id} style={{...sCard({marginBottom:8}),display:"flex",alignItems:"center",gap:10}}>
       <span style={{fontSize:22}}>{ex.emoji}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700}}>{ex.name}</div><div style={{fontSize:11,color:C.muted}}>{ex.sets} Sätze × {ex.reps}{ex.weight?` · ${ex.weight}kg`:""}</div>{ex.note&&<div style={{fontSize:10,color:C.dim,marginTop:2}}>{ex.note}</div>}</div>
-      <button onClick={()=>remEx(dayIdx,ex.id)} style={{background:"none",color:C.dim,fontSize:14,padding:4}} onMouseEnter={e=>e.target.style.color="#c0392b"} onMouseLeave={e=>e.target.style.color=C.dim}>✕</button>
+      <button onClick={()=>remEx(dayIdx,ex.id)} style={{background:"none",color:C.dim,fontSize:14,padding:4}}>✕</button>
     </div>)}
     <div style={{background:C.bg,borderRadius:14,padding:14,border:`1.5px dashed ${C.border}`,marginTop:4}}>
       <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:10}}>+ ÜBUNG HINZUFÜGEN</div>
@@ -622,7 +822,7 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
 
   if(view==="logSession"&&sel){
     const dayEx=sel.days[dayIdx].exercises||[];
-    return<div className="fade">
+    return<div>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><button onClick={()=>setView("detail")} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,color:C.textSec,padding:"6px 12px",fontSize:13}}>← Zurück</button><div style={{fontFamily:"'Syne',sans-serif",fontSize:14,fontWeight:800}}>🏋️ Training</div></div>
       <div style={{background:C.accentSoft,borderRadius:12,padding:"12px 16px",marginBottom:12,border:`1px solid ${C.borderStrong}`}}><div style={{fontWeight:700,fontSize:14}}>{sel.name} · {sel.days[dayIdx].name}</div><div style={{fontSize:11,color:C.muted,marginTop:2}}>{dayEx.length} Übungen</div></div>
       {dayEx.map(ex=><div key={ex.id} style={{...sCard({marginBottom:10})}}>
@@ -633,7 +833,7 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
     </div>;
   }
 
-  return<div className="fade">
+  return<div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:800}}>🏋️ Training</div><button onClick={()=>setView("create")} style={{background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:9,color:C.accent,padding:"6px 14px",fontSize:12,fontWeight:700}}>+ Neuer Plan</button></div>
     {Object.keys(workoutLog).length>0&&<div style={{...sCard({marginBottom:14})}}>
       <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:.5,marginBottom:10}}>TRAINING LETZTE 14 TAGE</div>
@@ -641,12 +841,12 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
     </div>}
     {workoutPlans.length===0?<div style={{...sCard({border:`1.5px dashed ${C.border}`}),textAlign:"center",padding:36,color:C.dim}}><div style={{fontSize:40,marginBottom:10}}>🏋️</div>Erstelle deinen ersten Plan</div>:workoutPlans.map(plan=><div key={plan.id} style={{...sCard({marginBottom:10})}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-        <div style={{flex:1,cursor:"pointer"}} onClick={()=>{setSel(plan);setDayIdx(0);setView("detail");}}>
+        <div style={{flex:1,cursor:"pointer",minWidth:0}} onClick={()=>{setSel(plan);setDayIdx(0);setView("detail");}}>
           <div style={{fontSize:14,fontWeight:700}}>{plan.name}</div>
           <div style={{fontSize:11,color:C.muted,marginTop:2}}>{plan.days.length} Tage · {plan.days.reduce((s,d)=>s+(d.exercises||[]).length,0)} Übungen</div>
           <div style={{display:"flex",gap:5,marginTop:7,flexWrap:"wrap"}}>{plan.days.map((d,i)=><span key={i} style={{background:C.bg,borderRadius:6,padding:"2px 8px",fontSize:10,color:C.textSec,border:`1px solid ${C.border}`,fontWeight:600}}>{d.name}</span>)}</div>
         </div>
-        <div style={{display:"flex",gap:6,marginLeft:10}}>
+        <div style={{display:"flex",gap:6,marginLeft:10,flexShrink:0}}>
           <button onClick={()=>{setSel(plan);setDayIdx(0);setView("detail");}} style={{background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:8,color:C.accent,padding:"6px 10px",fontSize:11,fontWeight:700}}>Öffnen</button>
           <button onClick={()=>delPlan(plan.id)} style={{background:"#fff0f2",border:`1px solid #f5b8c0`,borderRadius:8,color:"#c0392b",padding:"6px 9px",fontSize:13}}>🗑️</button>
         </div>
@@ -659,15 +859,12 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
   </div>;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PROFILE TAB
-// ─────────────────────────────────────────────────────────────────────────────
 function ProfileTab({user,goals,bmi,stepsPerm,requestSteps,setGoals,showNotif}){
   const[editG,setEditG]=useState(goals);
   const[gOpen,setGOpen]=useState(false);
   const bmiCat=bmi<18.5?"Untergewicht":bmi<25?"Normalgewicht ✓":bmi<30?"Übergewicht":"Adipositas";
   const save=()=>{setGoals(editG);lsSet(K.GOALS,editG);setGOpen(false);showNotif("🎯 Ziele gespeichert!");};
-  return<div className="fade">
+  return<div>
     <div style={{background:`linear-gradient(135deg,${C.accentSoft},${C.blueSoft})`,borderRadius:18,padding:"22px 16px",marginBottom:12,textAlign:"center",border:`1px solid ${C.border}`,boxShadow:C.shadow}}>
       <div style={{width:58,height:58,borderRadius:"50%",background:`linear-gradient(135deg,${C.accent},${C.blue})`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 10px",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:24,color:"#fff",boxShadow:`0 4px 14px ${C.accent}44`}}>{user.name?.[0]?.toUpperCase()}</div>
       <div style={{fontFamily:"'Syne',sans-serif",fontSize:19,fontWeight:800,color:C.text}}>{user.name}</div>
@@ -684,7 +881,7 @@ function ProfileTab({user,goals,bmi,stepsPerm,requestSteps,setGoals,showNotif}){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:.5}}>TAGESZIELE</div><button onClick={()=>{setEditG(goals);setGOpen(g=>!g);}} style={{background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:7,color:C.accent,padding:"4px 10px",fontSize:11,fontWeight:700}}>Bearbeiten</button></div>
       {[{l:"Kalorien",v:`${goals.calories} kcal`,c:C.accent},{l:"Protein",v:`${goals.protein}g`,c:C.pink}].map(r=><div key={r.l} style={{display:"flex",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}><span style={{fontSize:13,color:C.textSec,fontWeight:500}}>{r.l}</span><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}
       {gOpen&&<div style={{marginTop:12}}>
-        {[{key:"calories",l:"Kalorien (kcal)"},{key:"protein",l:"Protein (g)"}].map(f=><div key={f.key} style={{marginBottom:10}}><div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:5}}>{f.l}</div><input type="number" inputMode="decimal" value={editG[f.key]} onChange={e=>setEditG(g=>({...g,[f.key]:Number(e.target.value)}))} style={{width:"100%",background:C.bg,border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:15,fontWeight:700,fontFamily:"inherit"}}/></div>)}
+        {[{key:"calories",l:"Kalorien (kcal)"},{key:"protein",l:"Protein (g)"}].map(f=><div key={f.key} style={{marginBottom:10}}><div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:5}}>{f.l}</div><input type="number" inputMode="decimal" value={editG[f.key]} onChange={e=>setEditG(g=>({...g,[f.key]:Number(e.target.value)}))} style={{width:"100%",background:C.bg,border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 12px",color:C.text,fontSize:16,fontWeight:700,fontFamily:"inherit"}}/></div>)}
         <button onClick={save} style={{width:"100%",background:`linear-gradient(135deg,${C.accent},${C.accent2})`,borderRadius:10,padding:12,color:"#fff",fontSize:14,fontWeight:700}}>💾 Speichern</button>
       </div>}
     </div>
