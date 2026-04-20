@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from "@zxing/library";
 
 const K = { USER:"trackadenz_user",LOG:"trackadenz_log",GOALS:"trackadenz_goals",STEPS:"trackadenz_steps",WORKOUT_PLANS:"trackadenz_workout_plans",WORKOUT_LOG:"trackadenz_workout_log",FAVS:"trackadenz_favorites" };
 
@@ -65,33 +66,15 @@ function ls(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;
 function lsSet(k,v){localStorage.setItem(k,JSON.stringify(v));}
 function searchFoods(q){if(!q||q.length<2)return[];const lq=q.toLowerCase();return FOOD_DB.filter(f=>f.name.toLowerCase().includes(lq)).slice(0,7);}
 
-// IMPORTANT: font-size must be >=16px on inputs to prevent iOS Safari zoom-on-focus
 const sInput=(extra={})=>({width:"100%",background:C.surface,border:`1.5px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:C.text,fontSize:16,WebkitAppearance:"none",fontFamily:"inherit",...extra});
 const sBtn=(variant="primary",extra={})=>{const b={borderRadius:12,padding:"13px 20px",fontSize:14,fontWeight:700,cursor:"pointer",border:"none",width:"100%",fontFamily:"inherit",...extra};if(variant==="primary")return{...b,background:`linear-gradient(135deg,${C.accent},${C.accent2})`,color:"#fff",boxShadow:`0 4px 16px ${C.accent}33`};if(variant==="ghost")return{...b,background:C.surface,color:C.textSec,border:`1.5px solid ${C.border}`};if(variant==="danger")return{...b,background:"#fff0f2",color:"#c0392b",border:"1.5px solid #f5b8c0"};return b;};
 const sCard=(extra={})=>({background:C.card,borderRadius:16,padding:"14px 16px",border:`1px solid ${C.border}`,boxShadow:C.shadow,...extra});
 const sPill=(active,color=C.accent)=>({flex:1,padding:"9px 4px",borderRadius:10,fontSize:12,fontWeight:700,background:active?color:C.surface,color:active?"#fff":C.muted,border:`1.5px solid ${active?color:C.border}`,cursor:"pointer",transition:"all .15s"});
 
-// ── Dynamic ZXing loader (loads UMD from CDN when scanner opens) ────────────
-let zxingLoadPromise = null;
-function loadZXing() {
-  if (window.ZXing) return Promise.resolve(window.ZXing);
-  if (zxingLoadPromise) return zxingLoadPromise;
-  zxingLoadPromise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js";
-    script.async = true;
-    script.onload = () => window.ZXing ? resolve(window.ZXing) : reject(new Error("ZXing not available"));
-    script.onerror = () => reject(new Error("ZXing script failed"));
-    document.head.appendChild(script);
-  });
-  return zxingLoadPromise;
-}
-
 export default function TrackadenZ(){
   const[user,setUser]=useState(null);
   const[onboarding,setOnboarding]=useState(false);
   const[tab,setTab]=useState("dashboard");
-  const[prevTab,setPrevTab]=useState("dashboard");
   const[tabTransition,setTabTransition]=useState(false);
   const[log,setLog]=useState({});
   const[goals,setGoals]=useState({calories:2000,protein:150});
@@ -108,7 +91,6 @@ export default function TrackadenZ(){
   const[pendingCam,setPendingCam]=useState(null);
   const[scanning,setScanning]=useState(false);
   const[scannedCode,setScannedCode]=useState("");
-  const[scanLoading,setScanLoading]=useState(false);
   const[searchQ,setSearchQ]=useState("");
   const[searchRes,setSearchRes]=useState([]);
   const[selFood,setSelFood]=useState(null);
@@ -123,6 +105,7 @@ export default function TrackadenZ(){
   const videoRef=useRef(null);
   const streamRef=useRef(null);
   const zxingControlsRef=useRef(null);
+  const zxingReaderRef=useRef(null);
   const fileRef=useRef();
   const barcodeInputRef=useRef();
   const searchInputRef=useRef();
@@ -139,7 +122,7 @@ export default function TrackadenZ(){
     setFavorites(ls(K.FAVS,[]));
   },[]);
 
-  // Prevent iOS Safari pinch-zoom and double-tap zoom
+  // Prevent iOS zoom gestures
   useEffect(()=>{
     const prevent = e => { if (e.touches && e.touches.length > 1) e.preventDefault(); };
     let lastTouch = 0;
@@ -161,14 +144,12 @@ export default function TrackadenZ(){
     };
   },[]);
 
-  // Lock viewport to prevent zoom (ensures viewport meta tag has maximum-scale=1)
   useEffect(()=>{
     let meta = document.querySelector('meta[name="viewport"]');
     if (!meta) { meta = document.createElement("meta"); meta.name = "viewport"; document.head.appendChild(meta); }
     meta.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
   },[]);
 
-  // Keyboard detection
   useEffect(()=>{
     const onResize=()=>setKbUp(window.innerHeight/window.screen.height<0.72);
     window.addEventListener("resize",onResize);
@@ -182,17 +163,14 @@ export default function TrackadenZ(){
 
   function showNotif(msg,type="ok"){setNotif({msg,type});setTimeout(()=>setNotif(null),2600);}
 
-  // Tab switch with sprinter animation
   function switchTab(newTab){
     if (newTab === tab) return;
-    setPrevTab(tab);
     setTabTransition(true);
     clearTimeout(tabAnimRef.current);
     setTab(newTab);
     tabAnimRef.current = setTimeout(() => setTabTransition(false), 600);
   }
 
-  // Camera
   function requestCamera(action){
     if(camPerm==="granted"){action==="barcode"?startScanner():setAddMode("image");return;}
     setPendingCam(action);setCamModal(true);
@@ -209,25 +187,24 @@ export default function TrackadenZ(){
   }
   function denyCamera(){setCamModal(false);setCamPerm("denied");lsSet("tz_cam_perm","denied");setPendingCam(null);}
 
-  // ── GTIN/EAN Barcode Scanner via ZXing (works on iOS Safari!) ──────────────
+  // ── GTIN/EAN Barcode Scanner via bundled ZXing ─────────────────────────────
   async function startScanner(){
-    setScanning(true);setScannedCode("");setAiResult(null);setScanLoading(true);
+    setScanning(true);setScannedCode("");setAiResult(null);
     try {
-      const ZXing = await loadZXing();
-      setScanLoading(false);
       const hints = new Map();
       const formats = [
-        ZXing.BarcodeFormat.EAN_13,
-        ZXing.BarcodeFormat.EAN_8,
-        ZXing.BarcodeFormat.UPC_A,
-        ZXing.BarcodeFormat.UPC_E,
-        ZXing.BarcodeFormat.CODE_128,
-        ZXing.BarcodeFormat.CODE_39,
-        ZXing.BarcodeFormat.ITF,
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.ITF,
       ];
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      const reader = new ZXing.BrowserMultiFormatReader(hints, 250);
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
+      hints.set(DecodeHintType.TRY_HARDER, true);
+      const reader = new BrowserMultiFormatReader(hints, 250);
+      zxingReaderRef.current = reader;
 
       const constraints = {
         video: {
@@ -237,7 +214,7 @@ export default function TrackadenZ(){
         },
       };
 
-      zxingControlsRef.current = await reader.decodeFromConstraints(constraints, videoRef.current, (result, err) => {
+      zxingControlsRef.current = await reader.decodeFromConstraints(constraints, videoRef.current, (result) => {
         if (result) {
           const code = result.getText();
           if (code && code.length >= 6) {
@@ -247,22 +224,21 @@ export default function TrackadenZ(){
           }
         }
       });
-      // Keep a reference to the stream for cleanup
       if (videoRef.current && videoRef.current.srcObject) {
         streamRef.current = videoRef.current.srcObject;
       }
     } catch (e) {
       setScanning(false);
-      setScanLoading(false);
       showNotif("❌ Scanner konnte nicht gestartet werden", "err");
     }
   }
 
   function stopScanner(){
     setScanning(false);
-    try { zxingControlsRef.current?.reset?.(); } catch {}
+    try { zxingReaderRef.current?.reset?.(); } catch {}
     try { zxingControlsRef.current?.stop?.(); } catch {}
     zxingControlsRef.current = null;
+    zxingReaderRef.current = null;
     if (streamRef.current) {
       try { streamRef.current.getTracks().forEach(t => t.stop()); } catch {}
       streamRef.current = null;
@@ -308,7 +284,6 @@ export default function TrackadenZ(){
     nl[tk]=[...nl[tk],{...entry,id:Date.now(),time:new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}];
     setLog(nl);lsSet(K.LOG,nl);
 
-    // Track in favorites - keep most-used items
     const favKey = `${entry.emoji}|${entry.name}|${entry.grams}`;
     const existing = favorites.find(f => f.key === favKey);
     const newFavs = existing
@@ -349,14 +324,12 @@ export default function TrackadenZ(){
   function requestSteps(){if("DeviceMotionEvent" in window&&typeof DeviceMotionEvent.requestPermission==="function"){DeviceMotionEvent.requestPermission().then(res=>{const ok=res==="granted";setStepsPerm(ok?"granted":"denied");lsSet("tz_steps_perm",ok?"granted":"denied");if(ok)showNotif("✅ Schrittzähler aktiv!");});}else{setStepsPerm("granted");lsSet("tz_steps_perm","granted");showNotif("✅ Schrittzähler aktiv!");}}
   function logSteps(n){const s={...stepsData,[tk]:n};setStepsData(s);lsSet(K.STEPS,s);}
 
-  // Week overview (last 7 days incl. today)
   const last7Days = Array.from({length:7}, (_,i) => {
     const d = new Date(); d.setDate(d.getDate() - (6-i));
     const key = dateKey(d);
     const entries = log[key] || [];
     return {
-      date: d,
-      key,
+      date: d, key,
       label: d.toLocaleDateString("de-DE", { weekday: "short" }).slice(0,2),
       dayNum: d.getDate(),
       calories: Math.round(entries.reduce((s,e) => s+e.calories, 0)),
@@ -374,7 +347,6 @@ export default function TrackadenZ(){
   const bmi=user?.weight&&user?.height?(user.weight/((user.height/100)**2)).toFixed(1):null;
   const navItems=[{id:"dashboard",icon:"⚡",label:"Heute"},{id:"log",icon:"🍽️",label:"Mahlzeiten"},{id:"history",icon:"📊",label:"Verlauf"},{id:"workout",icon:"🏋️",label:"Training"},{id:"profile",icon:"👤",label:"Profil"}];
   const sprinterEmoji = user?.gender === "female" ? "🏃‍♀️" : "🏃";
-
   const topFavorites = [...favorites].sort((a,b) => b.count - a.count).slice(0,6);
 
   if(onboarding){
@@ -446,7 +418,6 @@ export default function TrackadenZ(){
         textarea{resize:none;line-height:1.5}
       `}</style>
 
-      {/* Sprinter tab animation overlay */}
       {tabTransition && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,pointerEvents:"none",zIndex:500,overflow:"hidden"}}>
           <div style={{position:"absolute",top:"50%",left:0,transform:"translateY(-50%)",fontSize:52,animation:"sprintAcross .6s cubic-bezier(0.4, 0, 0.2, 1) forwards",filter:`drop-shadow(0 4px 12px ${C.accent}66)`,willChange:"transform"}}>
@@ -458,7 +429,6 @@ export default function TrackadenZ(){
 
       {notif&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:notif.type==="err"?"#fff0f2":"#e6faf7",border:`1px solid ${notif.type==="err"?"#f5b8c0":C.borderStrong}`,color:notif.type==="err"?"#c0392b":C.accent2,padding:"10px 20px",borderRadius:12,fontSize:13,fontWeight:700,zIndex:9999,whiteSpace:"nowrap",boxShadow:C.shadowMd,animation:"slideUp .2s ease"}}>{notif.msg}</div>}
 
-      {/* Header */}
       <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"calc(env(safe-area-inset-top,0) + 10px) 18px 13px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0,zIndex:100,boxShadow:"0 1px 8px rgba(31,181,165,0.07)"}}>
         <div>
           <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:C.text}}>Trackaden<span style={{color:C.accent}}>Z</span></div>
@@ -467,10 +437,8 @@ export default function TrackadenZ(){
         {user&&<div style={{width:34,height:34,borderRadius:"50%",background:`linear-gradient(135deg,${C.accent},${C.blue})`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Syne',sans-serif",fontWeight:800,fontSize:14,color:"#fff",boxShadow:`0 2px 8px ${C.accent}44`}}>{user.name?.[0]?.toUpperCase()}</div>}
       </div>
 
-      {/* Content */}
       <div key={tab} className="tab-content" style={{flex:1,overflowY:"auto",padding:"14px 14px 82px",WebkitOverflowScrolling:"touch"}}>
 
-        {/* DASHBOARD */}
         {tab==="dashboard"&&<div>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:16,fontWeight:700}}>Hey {user?.name} 👋</div>
@@ -502,7 +470,6 @@ export default function TrackadenZ(){
             </div>
           </div>
 
-          {/* WEEK OVERVIEW */}
           <div style={{...sCard({marginBottom:12})}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div>
@@ -517,7 +484,7 @@ export default function TrackadenZ(){
             <div style={{display:"flex",alignItems:"flex-end",gap:5,height:72,marginBottom:6}}>
               {(() => {
                 const maxCal = Math.max(goals.calories * 1.2, ...last7Days.map(d => d.calories), 100);
-                return last7Days.map((d,i) => {
+                return last7Days.map((d) => {
                   const h = Math.max(4, (d.calories/maxCal)*60);
                   const goalH = (goals.calories/maxCal)*60;
                   const over = d.calories > goals.calories;
@@ -541,7 +508,6 @@ export default function TrackadenZ(){
             </div>
           </div>
 
-          {/* Steps */}
           <div style={{...sCard({marginBottom:12})}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -563,7 +529,6 @@ export default function TrackadenZ(){
           </div>
         </div>}
 
-        {/* LOG */}
         {tab==="log"&&<div>
           {mealsByType.map(mt=><div key={mt.id} style={{marginBottom:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -582,7 +547,6 @@ export default function TrackadenZ(){
             </div>)}
           </div>)}
 
-          {/* FAVORITES SECTION */}
           {topFavorites.length > 0 && (
             <div style={{marginTop:24}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -608,7 +572,6 @@ export default function TrackadenZ(){
           )}
         </div>}
 
-        {/* HISTORY */}
         {tab==="history"&&<div>
           <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:.6,marginBottom:12}}>LETZTE 30 TAGE</div>
           {historyDays.length===0?<div style={{...sCard(),textAlign:"center",padding:40,color:C.dim}}><div style={{fontSize:40,marginBottom:10}}>📊</div>Noch keine Daten</div>:<>
@@ -638,7 +601,6 @@ export default function TrackadenZ(){
         </button>)}
       </div>}
 
-      {/* ADD FOOD MODAL */}
       {addModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:1000,display:"flex",alignItems:"flex-end",animation:"fadeIn .15s ease"}} onClick={e=>{if(e.target===e.currentTarget)closeModal();}}>
         <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:C.surface,borderRadius:"22px 22px 0 0",display:"flex",flexDirection:"column",maxHeight:"93svh",boxShadow:"0 -4px 32px rgba(31,181,165,0.14)",animation:"slideUp .22s ease"}}>
           <div style={{padding:"15px 16px 11px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
@@ -647,13 +609,12 @@ export default function TrackadenZ(){
               <button onClick={closeModal} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,padding:"4px 10px",fontSize:14}}>✕</button>
             </div>
             <div style={{display:"flex",gap:6}}>
-              {[{id:"search",l:"🔍 Suche"},{id:"favorites",l:"⭐ Favoriten"},{id:"ai",l:"🤖 KI"},{id:"image",l:"📸 Foto"},{id:"barcode",l:"▦ Scan"}].map(m=><button key={m.id} onClick={()=>{if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}setAddMode(m.id);setAiResult(null);if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();}} style={{...sPill(addMode===m.id,C.accent),fontSize:10}}>{m.l}</button>)}
+              {[{id:"search",l:"🔍 Suche"},{id:"favorites",l:"⭐ Fav"},{id:"ai",l:"🤖 KI"},{id:"image",l:"📸 Foto"},{id:"barcode",l:"▦ Scan"}].map(m=><button key={m.id} onClick={()=>{if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}setAddMode(m.id);setAiResult(null);if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();}} style={{...sPill(addMode===m.id,C.accent),fontSize:10}}>{m.l}</button>)}
             </div>
           </div>
 
           <div ref={modalBodyRef} style={{overflowY:"auto",padding:"13px 16px 28px",flex:1,WebkitOverflowScrolling:"touch"}}>
 
-            {/* SEARCH */}
             {addMode==="search"&&<div>
               <input ref={searchInputRef} autoFocus value={searchQ} onChange={e=>handleSearch(e.target.value)} placeholder="z.B. Hühnchen, Reis, Quark…" style={sInput({marginBottom:10})} onFocus={()=>setTimeout(()=>modalBodyRef.current?.scrollTo({top:0,behavior:"smooth"}),350)}/>
               {searchRes.map(food=><button key={food.name} onClick={()=>handleSelectFood(food)} style={{width:"100%",background:selFood?.name===food.name?C.accentSoft:C.bg,border:`1.5px solid ${selFood?.name===food.name?C.accent:C.border}`,borderRadius:11,padding:"10px 14px",marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center",color:C.text}}>
@@ -673,7 +634,6 @@ export default function TrackadenZ(){
               </div>;})()}
             </div>}
 
-            {/* FAVORITES */}
             {addMode==="favorites"&&<div>
               {topFavorites.length === 0 ? (
                 <div style={{background:C.bg,borderRadius:14,padding:36,textAlign:"center",color:C.dim,border:`1.5px dashed ${C.border}`}}>
@@ -698,7 +658,6 @@ export default function TrackadenZ(){
               )}
             </div>}
 
-            {/* AI TEXT */}
             {addMode==="ai"&&<div>
               <textarea value={aiInput} onChange={e=>setAiInput(e.target.value)} placeholder="z.B. 150g Hühnchenbrust, 50g Reis, 1 EL Olivenöl…" style={{...sInput(),minHeight:80,marginBottom:10}} onFocus={e=>setTimeout(()=>e.target.scrollIntoView({behavior:"smooth",block:"start"}),350)}/>
               <button onClick={handleAiAnalyze} disabled={aiLoading||!aiInput.trim()} style={sBtn("primary",{opacity:!aiInput.trim()||aiLoading?.5:1,marginBottom:10})}>{aiLoading?"⏳ Analysiere…":"🤖 KI analysieren"}</button>
@@ -708,7 +667,6 @@ export default function TrackadenZ(){
               </div>}
             </div>}
 
-            {/* IMAGE */}
             {addMode==="image"&&<div>
               <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={e=>{const f=e.target.files[0];if(!f)return;setImgFile(f);const r=new FileReader();r.onload=ev=>setImgPreview(ev.target.result);r.readAsDataURL(f);}} style={{display:"none"}}/>
               {!imgPreview?<button onClick={()=>{if(camPerm!=="granted"){requestCamera("image");return;}fileRef.current.click();}} style={{width:"100%",background:C.bg,border:`2px dashed ${C.border}`,borderRadius:16,padding:"36px 20px",color:C.muted,fontSize:13,display:"flex",flexDirection:"column",alignItems:"center",gap:8,marginBottom:10}}><span style={{fontSize:44}}>📸</span>Foto aufnehmen oder auswählen</button>:<div style={{marginBottom:10}}><img src={imgPreview} alt="meal" style={{width:"100%",borderRadius:14,maxHeight:200,objectFit:"cover",border:`1px solid ${C.border}`,display:"block"}}/><button onClick={()=>{setImgFile(null);setImgPreview(null);setAiResult(null);}} style={{marginTop:7,background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,color:C.textSec,padding:"5px 12px",fontSize:12}}>Anderes Bild</button></div>}
@@ -719,19 +677,17 @@ export default function TrackadenZ(){
               </div>}
             </div>}
 
-            {/* BARCODE – ZXing iOS Scanner */}
             {addMode==="barcode"&&<div>
               <div style={{position:"relative",borderRadius:16,overflow:"hidden",background:"#111",marginBottom:12,aspectRatio:"4/3",maxHeight:"45svh"}}>
-                <video ref={videoRef} style={{width:"100%",height:"100%",objectFit:"cover",display:(scanning||scanLoading)?"block":"none"}} playsInline muted autoPlay/>
-                {scanning&&!scanLoading&&<>
+                <video ref={videoRef} style={{width:"100%",height:"100%",objectFit:"cover",display:scanning?"block":"none"}} playsInline muted autoPlay/>
+                {scanning&&<>
                   <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
                     {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h],i)=><div key={i} style={{position:"absolute",width:28,height:28,[v]:18,[h]:18,borderTop:v==="top"?`3px solid ${C.accent}`:"none",borderBottom:v==="bottom"?`3px solid ${C.accent}`:"none",borderLeft:h==="left"?`3px solid ${C.accent}`:"none",borderRight:h==="right"?`3px solid ${C.accent}`:"none",borderRadius:3}}/>)}
                     <div style={{width:"65%",height:2,background:`linear-gradient(90deg,transparent,${C.accent},transparent)`,animation:"scanLine 1.8s ease-in-out infinite"}}/>
                   </div>
                   <div style={{position:"absolute",bottom:10,left:0,right:0,textAlign:"center"}}><span style={{background:"rgba(0,0,0,.55)",color:"#fff",fontSize:11,fontWeight:700,padding:"4px 14px",borderRadius:20}}>EAN / GTIN in den Rahmen halten</span></div>
                 </>}
-                {scanLoading&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#111"}}><div style={{fontSize:34,marginBottom:8,animation:"pulse 1s infinite"}}>⚙️</div><div style={{fontSize:13,color:C.accent,fontWeight:700}}>Scanner wird geladen…</div></div>}
-                {!scanning&&!scanLoading&&!aiLoading&&!aiResult&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:50,marginBottom:8}}>▦</div><div style={{fontSize:13,color:"#999"}}>Scanner bereit</div></div>}
+                {!scanning&&!aiLoading&&!aiResult&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:50,marginBottom:8}}>▦</div><div style={{fontSize:13,color:"#999"}}>Scanner bereit</div></div>}
                 {aiLoading&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#111"}}><div style={{fontSize:34,marginBottom:8,animation:"pulse 1s infinite"}}>🔍</div><div style={{fontSize:13,color:C.accent,fontWeight:700}}>Produkt wird gesucht…</div>{scannedCode&&<div style={{fontSize:10,color:"#aaa",marginTop:4}}>GTIN: {scannedCode}</div>}</div>}
               </div>
               <div style={{display:"flex",gap:8,marginBottom:12}}>
