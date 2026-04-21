@@ -172,7 +172,7 @@ export default function TrackadenZ(){
     setTabTransition(true);
     clearTimeout(tabAnimRef.current);
     setTab(newTab);
-    tabAnimRef.current = setTimeout(() => setTabTransition(false), 950);
+    tabAnimRef.current = setTimeout(() => setTabTransition(false), 1400);
   }
 
   function requestCamera(action){
@@ -458,7 +458,7 @@ export default function TrackadenZ(){
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
         @keyframes scanLine{0%,100%{transform:translateY(-28px);opacity:.3}50%{transform:translateY(28px);opacity:1}}
-        @keyframes sprintAcross{0%{transform:translateX(120vw) scaleX(-1) scale(.9);opacity:0}10%{opacity:1}85%{opacity:1}100%{transform:translateX(-140%) scaleX(-1) scale(1.15);opacity:0}}
+        @keyframes sprintAcross{0%{transform:translateX(120vw) scaleX(1) scale(.9);opacity:0}10%{opacity:1}85%{opacity:1}100%{transform:translateX(-140%) scaleX(1) scale(1.15);opacity:0}}
         @keyframes sprintTrail{0%{opacity:0;transform:translateX(120vw)}15%{opacity:.5}100%{opacity:0;transform:translateX(-140%)}}
         @keyframes tabFade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
         .anim{animation:slideUp .22s ease}.fade{animation:fadeIn .22s ease}
@@ -470,10 +470,10 @@ export default function TrackadenZ(){
 
       {tabTransition && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,pointerEvents:"none",zIndex:500,overflow:"hidden"}}>
-          <div style={{position:"absolute",top:"50%",left:0,right:0,transform:"translateY(-50%)",fontSize:80,animation:"sprintAcross .95s cubic-bezier(0.4, 0, 0.2, 1) forwards",filter:`drop-shadow(0 4px 16px ${C.accent}66)`,willChange:"transform",textAlign:"right",paddingRight:0}}>
-            {sprinterEmoji}
+          <div style={{position:"absolute",top:"50%",left:0,right:0,transform:"translateY(-50%)",fontSize:108,animation:"sprintAcross 1.4s cubic-bezier(0.4, 0, 0.2, 1) forwards",filter:`drop-shadow(0 4px 16px ${C.accent}66)`,willChange:"transform",textAlign:"right",paddingRight:0,display:"flex",justifyContent:"flex-end",transform:"scaleX(-1) translateY(-50%)",transformOrigin:"center"}}>
+            <span style={{display:"inline-block",animation:"sprintAcross 1.4s cubic-bezier(0.4,0,0.2,1) forwards"}}>{sprinterEmoji}</span>
           </div>
-          <div style={{position:"absolute",top:"calc(50% + 8px)",right:0,left:0,transform:"translateY(-50%)",height:4,background:`linear-gradient(270deg,transparent,${C.accent},transparent)`,borderRadius:2,animation:"sprintTrail .95s cubic-bezier(0.4,0,0.2,1) forwards"}}/>
+          <div style={{position:"absolute",top:"calc(50% + 8px)",right:0,left:0,transform:"translateY(-50%)",height:4,background:`linear-gradient(270deg,transparent,${C.accent},transparent)`,borderRadius:2,animation:"sprintTrail 1.4s cubic-bezier(0.4,0,0.2,1) forwards"}}/>
         </div>
       )}
 
