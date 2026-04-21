@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from "@zxing/library";
+import {
+  MultiFormatReader, BarcodeFormat, DecodeHintType,
+  RGBLuminanceSource, BinaryBitmap, HybridBinarizer,
+} from "@zxing/library";
 
 const K = { USER:"trackadenz_user",LOG:"trackadenz_log",GOALS:"trackadenz_goals",STEPS:"trackadenz_steps",WORKOUT_PLANS:"trackadenz_workout_plans",WORKOUT_LOG:"trackadenz_workout_log",FAVS:"trackadenz_favorites" };
 
@@ -103,9 +106,10 @@ export default function TrackadenZ(){
   const[kbUp,setKbUp]=useState(false);
   const[ob,setOb]=useState({step:0,name:"",gender:"male",age:"",weight:"",height:"",activity:"moderate",goal:"maintain",sport:"none"});
   const videoRef=useRef(null);
+  const canvasRef=useRef(null);
   const streamRef=useRef(null);
-  const zxingControlsRef=useRef(null);
-  const zxingReaderRef=useRef(null);
+  const scanLoopRef=useRef(null);
+  const scanActiveRef=useRef(false);
   const fileRef=useRef();
   const barcodeInputRef=useRef();
   const searchInputRef=useRef();
@@ -168,7 +172,7 @@ export default function TrackadenZ(){
     setTabTransition(true);
     clearTimeout(tabAnimRef.current);
     setTab(newTab);
-    tabAnimRef.current = setTimeout(() => setTabTransition(false), 600);
+    tabAnimRef.current = setTimeout(() => setTabTransition(false), 950);
   }
 
   function requestCamera(action){
@@ -187,58 +191,104 @@ export default function TrackadenZ(){
   }
   function denyCamera(){setCamModal(false);setCamPerm("denied");lsSet("tz_cam_perm","denied");setPendingCam(null);}
 
-  // ── GTIN/EAN Barcode Scanner via bundled ZXing ─────────────────────────────
-  async function startScanner(){
-    setScanning(true);setScannedCode("");setAiResult(null);
-    try {
-      const hints = new Map();
-      const formats = [
-        BarcodeFormat.EAN_13,
-        BarcodeFormat.EAN_8,
-        BarcodeFormat.UPC_A,
-        BarcodeFormat.UPC_E,
-        BarcodeFormat.CODE_128,
-        BarcodeFormat.CODE_39,
-        BarcodeFormat.ITF,
-      ];
-      hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
-      hints.set(DecodeHintType.TRY_HARDER, true);
-      const reader = new BrowserMultiFormatReader(hints, 250);
-      zxingReaderRef.current = reader;
+  // ── GTIN/EAN Barcode Scanner – canvas loop with low-level ZXing API ─────────
+  // Uses MultiFormatReader directly on canvas frames – works on iOS Safari.
+  // The trick: we crop only the center 60% of the frame before decoding,
+  // giving ZXing a larger effective barcode size and faster recognition.
+  async function startScanner() {
+    setScanning(true); setScannedCode(""); setAiResult(null);
+    scanActiveRef.current = true;
 
-      const constraints = {
+    // Build ZXing reader once
+    const hints = new Map();
+    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+      BarcodeFormat.EAN_13, BarcodeFormat.EAN_8,
+      BarcodeFormat.UPC_A,  BarcodeFormat.UPC_E,
+      BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF,
+    ]);
+    hints.set(DecodeHintType.TRY_HARDER, true);
+    const zxReader = new MultiFormatReader();
+    zxReader.setHints(hints);
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width:  { ideal: 1920 },
+          height: { ideal: 1080 },
         },
+      });
+      streamRef.current = stream;
+      const vid = videoRef.current;
+      if (!vid) { stopScanner(); return; }
+      vid.srcObject = stream;
+      vid.setAttribute("playsinline", "true");
+      await vid.play();
+
+      // Wait for video to have real dimensions
+      await new Promise(res => {
+        if (vid.videoWidth > 0) { res(); return; }
+        vid.addEventListener("loadedmetadata", res, { once: true });
+      });
+
+      const canvas = canvasRef.current;
+
+      const tick = () => {
+        if (!scanActiveRef.current) return;
+        try {
+          const vw = vid.videoWidth;
+          const vh = vid.videoHeight;
+          if (vw > 0 && vh > 0) {
+            // Crop center 60% width × 40% height – the scan zone
+            const cropW = Math.floor(vw * 0.6);
+            const cropH = Math.floor(vh * 0.4);
+            const cropX = Math.floor((vw - cropW) / 2);
+            const cropY = Math.floor((vh - cropH) / 2);
+
+            canvas.width  = cropW;
+            canvas.height = cropH;
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            ctx.drawImage(vid, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+            const imgData = ctx.getImageData(0, 0, cropW, cropH);
+            const len = cropW * cropH;
+            // Convert RGBA → uint8 gray array for ZXing luminance source
+            const gray = new Uint8ClampedArray(len);
+            for (let i = 0; i < len; i++) {
+              const j = i * 4;
+              gray[i] = (imgData.data[j] * 77 + imgData.data[j+1] * 150 + imgData.data[j+2] * 29) >> 8;
+            }
+            const lum    = new RGBLuminanceSource(gray, cropW, cropH);
+            const bitmap = new BinaryBitmap(new HybridBinarizer(lum));
+            try {
+              const result = zxReader.decode(bitmap);
+              if (result) {
+                const code = result.getText();
+                if (code && code.length >= 6) {
+                  stopScanner();
+                  setScannedCode(code);
+                  lookupGTIN(code);
+                  return;
+                }
+              }
+            } catch { /* NotFoundException – keep scanning */ }
+          }
+        } catch { /* frame not ready yet */ }
+        scanLoopRef.current = setTimeout(tick, 200);
       };
 
-      zxingControlsRef.current = await reader.decodeFromConstraints(constraints, videoRef.current, (result) => {
-        if (result) {
-          const code = result.getText();
-          if (code && code.length >= 6) {
-            stopScanner();
-            setScannedCode(code);
-            lookupGTIN(code);
-          }
-        }
-      });
-      if (videoRef.current && videoRef.current.srcObject) {
-        streamRef.current = videoRef.current.srcObject;
-      }
-    } catch (e) {
+      scanLoopRef.current = setTimeout(tick, 400);
+    } catch {
+      scanActiveRef.current = false;
       setScanning(false);
-      showNotif("❌ Scanner konnte nicht gestartet werden", "err");
+      showNotif("❌ Kamera nicht verfügbar", "err");
     }
   }
 
-  function stopScanner(){
+  function stopScanner() {
+    scanActiveRef.current = false;
     setScanning(false);
-    try { zxingReaderRef.current?.reset?.(); } catch {}
-    try { zxingControlsRef.current?.stop?.(); } catch {}
-    zxingControlsRef.current = null;
-    zxingReaderRef.current = null;
+    clearTimeout(scanLoopRef.current);
     if (streamRef.current) {
       try { streamRef.current.getTracks().forEach(t => t.stop()); } catch {}
       streamRef.current = null;
@@ -408,8 +458,8 @@ export default function TrackadenZ(){
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
         @keyframes scanLine{0%,100%{transform:translateY(-28px);opacity:.3}50%{transform:translateY(28px);opacity:1}}
-        @keyframes sprintAcross{0%{transform:translateX(-120%) scale(.9);opacity:0}15%{opacity:1}80%{opacity:1}100%{transform:translateX(120vw) scale(1.1);opacity:0}}
-        @keyframes sprintTrail{0%{opacity:0;transform:translateX(-120%)}20%{opacity:.4}100%{opacity:0;transform:translateX(120vw)}}
+        @keyframes sprintAcross{0%{transform:translateX(120vw) scaleX(-1) scale(.9);opacity:0}10%{opacity:1}85%{opacity:1}100%{transform:translateX(-140%) scaleX(-1) scale(1.15);opacity:0}}
+        @keyframes sprintTrail{0%{opacity:0;transform:translateX(120vw)}15%{opacity:.5}100%{opacity:0;transform:translateX(-140%)}}
         @keyframes tabFade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)}}
         .anim{animation:slideUp .22s ease}.fade{animation:fadeIn .22s ease}
         .tab-content{animation:tabFade .35s ease}
@@ -420,10 +470,10 @@ export default function TrackadenZ(){
 
       {tabTransition && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,pointerEvents:"none",zIndex:500,overflow:"hidden"}}>
-          <div style={{position:"absolute",top:"50%",left:0,transform:"translateY(-50%)",fontSize:52,animation:"sprintAcross .6s cubic-bezier(0.4, 0, 0.2, 1) forwards",filter:`drop-shadow(0 4px 12px ${C.accent}66)`,willChange:"transform"}}>
+          <div style={{position:"absolute",top:"50%",left:0,right:0,transform:"translateY(-50%)",fontSize:80,animation:"sprintAcross .95s cubic-bezier(0.4, 0, 0.2, 1) forwards",filter:`drop-shadow(0 4px 16px ${C.accent}66)`,willChange:"transform",textAlign:"right",paddingRight:0}}>
             {sprinterEmoji}
           </div>
-          <div style={{position:"absolute",top:"calc(50% + 4px)",left:0,transform:"translateY(-50%)",height:3,width:80,background:`linear-gradient(90deg,transparent,${C.accent},transparent)`,borderRadius:2,animation:"sprintTrail .6s cubic-bezier(0.4,0,0.2,1) forwards"}}/>
+          <div style={{position:"absolute",top:"calc(50% + 8px)",right:0,left:0,transform:"translateY(-50%)",height:4,background:`linear-gradient(270deg,transparent,${C.accent},transparent)`,borderRadius:2,animation:"sprintTrail .95s cubic-bezier(0.4,0,0.2,1) forwards"}}/>
         </div>
       )}
 
@@ -680,6 +730,7 @@ export default function TrackadenZ(){
             {addMode==="barcode"&&<div>
               <div style={{position:"relative",borderRadius:16,overflow:"hidden",background:"#111",marginBottom:12,aspectRatio:"4/3",maxHeight:"45svh"}}>
                 <video ref={videoRef} style={{width:"100%",height:"100%",objectFit:"cover",display:scanning?"block":"none"}} playsInline muted autoPlay/>
+                <canvas ref={canvasRef} style={{display:"none"}}/>
                 {scanning&&<>
                   <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
                     {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h],i)=><div key={i} style={{position:"absolute",width:28,height:28,[v]:18,[h]:18,borderTop:v==="top"?`3px solid ${C.accent}`:"none",borderBottom:v==="bottom"?`3px solid ${C.accent}`:"none",borderLeft:h==="left"?`3px solid ${C.accent}`:"none",borderRight:h==="right"?`3px solid ${C.accent}`:"none",borderRadius:3}}/>)}
