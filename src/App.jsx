@@ -1044,98 +1044,468 @@ export default function TrackadenZ(){
 }
 
 // ─── WORKOUT TAB ──────────────────────────────────────────────────────────────
+// ─── Übungsvorlagen nach Muskelgruppen ───────────────────────────────────────
+const EXERCISE_TEMPLATES = {
+  "Brust": [
+    { name:"Bankdrücken", emoji:"🏋️", desc:"Lege dich auf eine flache Bank. Greife die Stange schulterbreit. Senke die Stange kontrolliert zur Brust ab und drücke sie explosiv hoch.", tips:"Schulterblätter fest zusammenziehen. Füße flach auf dem Boden. Ellbogen leicht angewinkelt lassen.", svg:"chest" },
+    { name:"Schrägbankdrücken", emoji:"🏋️", desc:"Bank auf ca. 30–45° einstellen. Stange oder Kurzhanteln zur Oberbrust führen.", tips:"Obere Brust stärker aktivieren. Schultern nach unten und hinten ziehen.", svg:"incline" },
+    { name:"Fliegende", emoji:"💪", desc:"Kurzhanteln über der Brust halten. Arme weit nach außen absenken (leicht gebeugt) und wieder zusammenführen.", tips:"Bewegung aus dem Schultergelenk, nicht aus dem Ellbogen. Brust bewusst zusammendrücken.", svg:"fly" },
+    { name:"Liegestütz", emoji:"🤸", desc:"Körper bildet eine gerade Linie. Hände schulterbreit. Brust berührt fast den Boden.", tips:"Core anspannen. Nicht die Hüfte durchhängen lassen. Langsam runter, schnell hoch.", svg:"pushup" },
+    { name:"Dips (Brust)", emoji:"💪", desc:"An parallelen Stangen leicht nach vorne lehnen. Tief absenken bis die Ellbogen 90° haben.", tips:"Mehr Vorwärtsneigung = mehr Brust. Aufrecht = mehr Trizeps.", svg:"dips" },
+  ],
+  "Rücken": [
+    { name:"Kreuzheben", emoji:"🏋️", desc:"Hüftbreit stehen. Rücken gerade, Stange nah am Körper. Mit den Beinen und Hüfte hochdrücken.", tips:"Kein runder Rücken. Bauch anspannen. Blick leicht nach vorne.", svg:"deadlift" },
+    { name:"Klimmzüge", emoji:"🧗", desc:"Schulterbreit an der Stange. Aus gestreckten Armen hochziehen bis das Kinn über die Stange kommt.", tips:"Schulterblätter aktiv einziehen. Nicht schaukeln. Kontrolliert absenken.", svg:"pullup" },
+    { name:"Rudern (Langhantel)", emoji:"🏋️", desc:"Vorbeuge ca. 45°. Stange zum Bauchnabel ziehen. Ellbogen nah am Körper führen.", tips:"Rücken gerade halten. Schulterblätter am Ende der Bewegung zusammenziehen.", svg:"row" },
+    { name:"Latziehen", emoji:"💪", desc:"Griffweite wählen (weit = Breite, eng = Dicke). Stange zum oberen Brustbereich ziehen.", tips:"Nicht nach hinten lehnen. Ellbogen nach unten führen. Bewegung bewusst aus dem Rücken.", svg:"lat" },
+    { name:"Rudern (Kabelzug)", emoji:"🎯", desc:"Aufrecht sitzen. Kabel zum Bauch ziehen. Schulterblätter zusammendrücken.", tips:"Rumpf stabil halten. Nicht mit dem Körper schwingen. Volle Bewegungsamplitude.", svg:"cable" },
+  ],
+  "Beine": [
+    { name:"Kniebeugen", emoji:"🦵", desc:"Füße schulterbreit. Knie über die Fußspitzen. Tief in die Hocke, Oberschenkel parallel zum Boden.", tips:"Knie nicht nach innen fallen lassen. Fersen auf dem Boden. Brust hoch.", svg:"squat" },
+    { name:"Beinpresse", emoji:"🦵", desc:"Rücken flach anlehnen. Füße hüftbreit auf der Platte. Knie in Richtung Schulter beugen.", tips:"Knie nicht überstrecken. Hüfte vom Sitz nicht abheben. Kontrolliert absenken.", svg:"legpress" },
+    { name:"Ausfallschritte", emoji:"🏃", desc:"Einen großen Schritt nach vorne. Hinteres Knie fast den Boden berühren. Zurückdrücken.", tips:"Oberkörper aufrecht. Vorderes Knie hinter der Fußspitze. Gewicht auf der Ferse.", svg:"lunge" },
+    { name:"Beinbeuger", emoji:"🦵", desc:"Bäuchlings auf der Maschine. Fersen zu den Gesäß ziehen. Kontrolliert strecken.", tips:"Hüfte auf der Polsterung lassen. Volle Streckung am Anfang. Langsam absenken.", svg:"legcurl" },
+    { name:"Wadenheben", emoji:"🦵", desc:"Auf den Fußballen stehen. So hoch wie möglich auf die Zehenspitzen. Langsam absenken.", tips:"Volle Bewegungsamplitude. Kurze Pause oben. Auch einbeinig möglich.", svg:"calf" },
+  ],
+  "Schulter": [
+    { name:"Schulterdrücken", emoji:"🏋️", desc:"Stange oder Kurzhanteln auf Schulterhöhe. Über den Kopf drücken. Arme nicht ganz strecken.", tips:"Core anspannen. Nicht ins Hohlkreuz fallen. Ellbogen leicht nach vorne.", svg:"ohp" },
+    { name:"Seitheben", emoji:"💪", desc:"Kurzhanteln seitlich heben bis auf Schulterhöhe. Ellbogen leicht gebeugt.", tips:"Nicht schwingen. Daumen leicht nach unten (Ausschütten). Schulterblatt bleibt unten.", svg:"lateral" },
+    { name:"Frontheben", emoji:"💪", desc:"Hantel nach vorne heben bis auf Schulterhöhe. Abwechselnd oder beide gleichzeitig.", tips:"Rumpf nicht nach hinten lehnen. Kontrolliert absenken. Nicht zu schwer.", svg:"frontraise" },
+    { name:"Reverse Flyes", emoji:"🤸", desc:"Vorbeuge ca. 45°. Kurzhanteln nach hinten außen heben – hintere Schulter aktivieren.", tips:"Ellbogen nur leicht gebeugt. Schulterblätter zusammenziehen. Keine Schwungbewegung.", svg:"rear" },
+    { name:"Face Pulls", emoji:"🎯", desc:"Kabelzug auf Kopfhöhe. Seil zu den Ohren ziehen. Ellbogen weit nach außen.", tips:"Wichtig für Schultergesundheit. Hintere Schulter und Rotatorenmanschette.", svg:"facepull" },
+  ],
+  "Bizeps": [
+    { name:"Bizepscurl (Langhantel)", emoji:"💪", desc:"Schulterbreit greifen. Stange zur Brust curlen. Ellbogen bleibt an der Seite.", tips:"Nicht mit den Schultern schwingen. Oben kurz halten. Langsam absenken.", svg:"bbcurl" },
+    { name:"Hammercurl", emoji:"💪", desc:"Neutral greifen (Daumen nach oben). Hantel zur Schulter curlen.", tips:"Trainiert Brachialis und Brachioradialis zusätzlich. Guter Biceps-Aufbau.", svg:"hammer" },
+    { name:"Konzentrationscurl", emoji:"💪", desc:"Sitzend, Ellbogen am Oberschenkel abstützen. Einseitig curlen.", tips:"Maximale Isolation. Volle Bewegungsamplitude. Oben kurz einspannen.", svg:"conc" },
+    { name:"Schrägbankscurl", emoji:"💪", desc:"Bank auf 45° stellen. Arme hängen lassen. Volle Streckung am unteren Punkt.", tips:"Bessere Dehnung des Bizeps. Ellbogen nicht nach vorne bewegen.", svg:"inccurl" },
+  ],
+  "Trizeps": [
+    { name:"Trizepsdrücken (Kabel)", emoji:"💪", desc:"Kabel von oben. Ellbogen am Körper. Unterarme nach unten strecken.", tips:"Ellbogen fest am Körper. Volle Streckung am Ende. Verschiedene Griffe möglich.", svg:"tricpush" },
+    { name:"Skull Crusher", emoji:"🏋️", desc:"Auf einer Bank liegend. Stange zur Stirn absenken. Ellbogen zeigt nach oben.", tips:"Ellbogen bleibt stationär. Kontrolliert absenken. Lange Trizepsportion gut trainiert.", svg:"skull" },
+    { name:"Dips (Trizeps)", emoji:"💪", desc:"An zwei Bänken. Körper aufrecht. Tief absenken. Kraft aus Trizeps.", tips:"Aufrechte Haltung für mehr Trizeps. Ellbogen zeigen nach hinten.", svg:"tricdip" },
+    { name:"Überkopfdrücken (Trizeps)", emoji:"💪", desc:"Hantel über dem Kopf halten. Ellbogen gebeugt. Strecken bis Arm gerade.", tips:"Langen Trizepskopf gut trainiert. Ellbogen zeigt nach oben. Rücken gerade.", svg:"tricoverhead" },
+  ],
+};
+
+// Kleine SVG-Skizzen für jede Übung
+function ExerciseSketch({type}){
+  const sketches = {
+    chest: <svg viewBox="0 0 80 50" width="80" height="50"><rect x="10" y="22" width="60" height="6" rx="3" fill="#4a7c59" opacity=".3"/><circle cx="40" cy="18" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="24" x2="40" y2="40" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="28" y2="42" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="52" y2="42" stroke="#4a7c59" strokeWidth="2"/><line x1="28" y1="28" x2="18" y2="24" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round"/><line x1="52" y1="28" x2="62" y2="24" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round"/></svg>,
+    squat: <svg viewBox="0 0 80 50" width="80" height="50"><circle cx="40" cy="8" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="14" x2="40" y2="26" stroke="#4a7c59" strokeWidth="2"/><line x1="20" y1="20" x2="60" y2="20" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round"/><line x1="40" y1="26" x2="28" y2="40" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="26" x2="52" y2="40" stroke="#4a7c59" strokeWidth="2"/><line x1="28" y1="40" x2="22" y2="50" stroke="#4a7c59" strokeWidth="2"/><line x1="52" y1="40" x2="58" y2="50" stroke="#4a7c59" strokeWidth="2"/></svg>,
+    deadlift: <svg viewBox="0 0 80 50" width="80" height="50"><circle cx="40" cy="10" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="16" x2="40" y2="30" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="30" x2="28" y2="44" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="30" x2="52" y2="44" stroke="#4a7c59" strokeWidth="2"/><rect x="8" y="42" width="64" height="5" rx="2.5" fill="#4a7c59" opacity=".35"/><circle cx="12" cy="44" r="4" fill="none" stroke="#4a7c59" strokeWidth="2"/><circle cx="68" cy="44" r="4" fill="none" stroke="#4a7c59" strokeWidth="2"/></svg>,
+    pullup: <svg viewBox="0 0 80 50" width="80" height="50"><rect x="10" y="4" width="60" height="5" rx="2.5" fill="#4a7c59" opacity=".4"/><circle cx="40" cy="18" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="24" x2="40" y2="38" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="28" y2="44" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="52" y2="44" stroke="#4a7c59" strokeWidth="2"/><line x1="30" y1="9" x2="35" y2="18" stroke="#4a7c59" strokeWidth="2"/><line x1="50" y1="9" x2="45" y2="18" stroke="#4a7c59" strokeWidth="2"/></svg>,
+    default: <svg viewBox="0 0 80 50" width="80" height="50"><circle cx="40" cy="12" r="7" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="19" x2="40" y2="34" stroke="#4a7c59" strokeWidth="2.5"/><line x1="40" y1="26" x2="26" y2="32" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="26" x2="54" y2="32" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="34" x2="30" y2="48" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="34" x2="50" y2="48" stroke="#4a7c59" strokeWidth="2"/></svg>,
+  };
+  return sketches[type] || sketches.default;
+}
+
 function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,showNotif}){
-  const[view,setView]=useState("plans");
+  const[view,setView]=useState("plans"); // plans | create | detail | logSession | templates | progress
   const[sel,setSel]=useState(null);
   const[newPlan,setNewPlan]=useState({name:"",days:[{name:"Tag A",exercises:[]}]});
-  const[newEx,setNewEx]=useState({name:"",sets:3,reps:"8–12",weight:"",note:"",emoji:"🏋️"});
   const[dayIdx,setDayIdx]=useState(0);
-  const[sw,setSw]=useState({});
-  const emos=["🏋️","💪","🦵","🔥","⚡","🎯","🤸","🏃","🚴","🧗","🥊","🤼"];
-  const iS={width:"100%",background:"#f5f0e8",border:`1.5px solid #d4c9a8`,borderRadius:12,padding:"11px 14px",color:"#2c2416",fontSize:16,marginBottom:10,fontFamily:"'DM Sans',sans-serif"};
-  const C2={leaf:"#4a7c59",leafSoft:"#e8f0e9",border:"#d4c9a8",text:"#2c2416",muted:"#8c7d65",surface:"#faf8f2",bg:"#f5f0e8",accent:"#4a7c59",accentSoft:"#e8f0e9",shadow:"0 2px 16px rgba(74,124,89,0.10)"};
+  const[sessionSets,setSessionSets]=useState({}); // {exId: [{weight:"", reps:"", done:false}]}
+  const[templateMuscle,setTemplateMuscle]=useState("Brust");
+  const[progressEx,setProgressEx]=useState(null); // exercise name to show progress for
+  const[customExName,setCustomExName]=useState("");
+  const[customExNote,setCustomExNote]=useState("");
+  const[customExEmoji,setCustomExEmoji]=useState("🏋️");
 
-  const createPlan=()=>{if(!newPlan.name.trim())return;saveWorkoutPlans([...workoutPlans,{...newPlan,id:Date.now(),createdAt:new Date().toISOString()}]);setView("plans");setNewPlan({name:"",days:[{name:"Tag A",exercises:[]}]});showNotif("✅ Plan erstellt!");};
+  const iS={width:"100%",background:"#f5f0e8",border:"1.5px solid #d4c9a8",borderRadius:12,padding:"11px 14px",color:"#2c2416",fontSize:16,marginBottom:10,fontFamily:"'DM Sans',sans-serif"};
+  const lf="#4a7c59",lfs="#e8f0e9",bdr="#d4c9a8",tx="#2c2416",mu="#8c7d65",sf="#faf8f2",bg="#f5f0e8";
+  const card={background:sf,borderRadius:18,padding:"14px 16px",border:`1px solid ${bdr}`,boxShadow:"0 2px 16px rgba(74,124,89,0.10)",marginBottom:12};
+  const backBtn=(label="← Zurück",action=()=>{setView("plans");setSel(null);})=>(
+    <button onClick={action} style={{background:bg,border:`1px solid ${bdr}`,borderRadius:10,color:mu,padding:"7px 14px",fontSize:13,fontWeight:600}}>{label}</button>
+  );
+
+  // Helpers
+  const createPlan=()=>{
+    if(!newPlan.name.trim())return;
+    saveWorkoutPlans([...workoutPlans,{...newPlan,id:Date.now(),createdAt:new Date().toISOString()}]);
+    setView("plans");setNewPlan({name:"",days:[{name:"Tag A",exercises:[]}]});
+    showNotif("✅ Plan erstellt!");
+  };
   const delPlan=id=>{saveWorkoutPlans(workoutPlans.filter(p=>p.id!==id));showNotif("🗑️ Gelöscht","err");};
-  const addEx=()=>{if(!newEx.name.trim())return;const p=JSON.parse(JSON.stringify(sel));p.days[dayIdx].exercises=[...(p.days[dayIdx].exercises||[]),{...newEx,id:Date.now()}];saveWorkoutPlans(workoutPlans.map(wp=>wp.id===p.id?p:wp));setSel(p);setNewEx({name:"",sets:3,reps:"8–12",weight:"",note:"",emoji:"🏋️"});showNotif("✅ Übung hinzugefügt!");};
-  const remEx=(di,eid)=>{const p=JSON.parse(JSON.stringify(sel));p.days[di].exercises=p.days[di].exercises.filter(e=>e.id!==eid);saveWorkoutPlans(workoutPlans.map(wp=>wp.id===p.id?p:wp));setSel(p);};
-  const logSession=()=>{const today=new Date().toDateString();const entry={planId:sel.id,planName:sel.name,dayName:sel.days[dayIdx].name,exercises:(sel.days[dayIdx].exercises||[]).map(ex=>({...ex,weight:sw[ex.id]||ex.weight||"–"})),date:today,timestamp:Date.now()};const wl={...workoutLog};if(!wl[today])wl[today]=[];wl[today].push(entry);saveWorkoutLog(wl);setSw({});showNotif("🎉 Training gespeichert!");setView("plans");};
+
+  const addExFromTemplate=(tmpl)=>{
+    const p=JSON.parse(JSON.stringify(sel));
+    const ex={id:Date.now(),name:tmpl.name,emoji:tmpl.emoji,note:tmpl.tips,sets:3,reps:"8–12",weight:"",sketchType:tmpl.svg};
+    p.days[dayIdx].exercises=[...(p.days[dayIdx].exercises||[]),ex];
+    saveWorkoutPlans(workoutPlans.map(wp=>wp.id===p.id?p:wp));
+    setSel(p);setView("detail");
+    showNotif(`✅ ${tmpl.name} hinzugefügt!`);
+  };
+
+  const addCustomEx=()=>{
+    if(!customExName.trim())return;
+    const p=JSON.parse(JSON.stringify(sel));
+    const ex={id:Date.now(),name:customExName,emoji:customExEmoji,note:customExNote,sets:3,reps:"8–12",weight:"",sketchType:"default"};
+    p.days[dayIdx].exercises=[...(p.days[dayIdx].exercises||[]),ex];
+    saveWorkoutPlans(workoutPlans.map(wp=>wp.id===p.id?p:wp));
+    setSel(p);setCustomExName("");setCustomExNote("");
+    showNotif("✅ Eigene Übung hinzugefügt!");
+  };
+
+  const remEx=(di,eid)=>{
+    const p=JSON.parse(JSON.stringify(sel));
+    p.days[di].exercises=p.days[di].exercises.filter(e=>e.id!==eid);
+    saveWorkoutPlans(workoutPlans.map(wp=>wp.id===p.id?p:wp));setSel(p);
+  };
+
+  // Session: init sets for each exercise
+  const initSession=(exercises)=>{
+    const s={};
+    exercises.forEach(ex=>{
+      const count=ex.sets||3;
+      s[ex.id]=Array.from({length:count},()=>({weight:ex.weight||"",reps:ex.reps||"",done:false}));
+    });
+    setSessionSets(s);
+  };
+
+  const updateSet=(exId,setIdx,field,val)=>{
+    setSessionSets(prev=>({...prev,[exId]:prev[exId].map((s,i)=>i===setIdx?{...s,[field]:val}:s)}));
+  };
+
+  const toggleSetDone=(exId,setIdx)=>{
+    setSessionSets(prev=>({...prev,[exId]:prev[exId].map((s,i)=>i===setIdx?{...s,done:!s.done}:s)}));
+  };
+
+  const addSet=(exId)=>setSessionSets(prev=>({...prev,[exId]:[...prev[exId],{weight:prev[exId][prev[exId].length-1]?.weight||"",reps:prev[exId][prev[exId].length-1]?.reps||"",done:false}]}));
+  const removeSet=(exId)=>setSessionSets(prev=>({...prev,[exId]:prev[exId].length>1?prev[exId].slice(0,-1):prev[exId]}));
+
+  const logSession=()=>{
+    const today=new Date().toDateString();
+    const exercises=(sel.days[dayIdx].exercises||[]).map(ex=>({
+      ...ex,
+      sets:sessionSets[ex.id]||[],
+    }));
+    const entry={planId:sel.id,planName:sel.name,dayName:sel.days[dayIdx].name,exercises,date:today,timestamp:Date.now()};
+    const wl={...workoutLog};
+    if(!wl[today])wl[today]=[];
+    wl[today].push(entry);
+    saveWorkoutLog(wl);
+    showNotif("🎉 Training gespeichert!");
+    setView("plans");
+  };
+
+  // Progress: find all logged weights for an exercise
+  const getProgress=(exName)=>{
+    const points=[];
+    Object.entries(workoutLog).forEach(([dk,sessions])=>{
+      sessions.forEach(s=>{
+        s.exercises?.forEach(ex=>{
+          if(ex.name===exName&&ex.sets?.length){
+            const maxW=Math.max(...ex.sets.map(st=>parseFloat(st.weight)||0).filter(v=>v>0));
+            if(maxW>0)points.push({date:dk,weight:maxW});
+          }
+        });
+      });
+    });
+    return points.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  };
+
   const last14=Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));const key=d.toDateString();return{label:d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}),count:(workoutLog[key]||[]).length};});
   const maxC=Math.max(1,...last14.map(d=>d.count));
-  const card={background:"#faf8f2",borderRadius:18,padding:"14px 16px",border:`1px solid #d4c9a8`,boxShadow:"0 2px 16px rgba(74,124,89,0.10)",marginBottom:12};
+  const emos=["🏋️","💪","🦵","🔥","⚡","🎯","🤸","🏃","🚴","🧗","🥊","🤼"];
 
-  const backBtn=<button onClick={()=>{setView("plans");setSel(null);}} style={{background:C2.bg,border:`1px solid ${C2.border}`,borderRadius:10,color:C2.muted,padding:"7px 14px",fontSize:13}}>← Zurück</button>;
-
+  // ── VIEW: CREATE PLAN ──────────────────────────────────────────────────────
   if(view==="create")return<div>
-    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>{backBtn}<div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:800,color:C2.text}}>Neuer Plan</div></div>
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+      {backBtn()}
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:800,color:tx}}>Neuer Plan</div>
+    </div>
     <input style={iS} placeholder="Planname (z.B. Push/Pull/Legs)" value={newPlan.name} onChange={e=>setNewPlan(p=>({...p,name:e.target.value}))} autoFocus/>
-    <div style={{fontSize:10,color:C2.muted,fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Trainingstage</div>
-    {newPlan.days.map((day,di)=><div key={di} style={{display:"flex",gap:8,marginBottom:8}}><input style={{...iS,flex:1,marginBottom:0}} value={day.name} onChange={e=>{const days=[...newPlan.days];days[di].name=e.target.value;setNewPlan(p=>({...p,days}));}} placeholder={`Tag ${di+1}`}/>{newPlan.days.length>1&&<button onClick={()=>setNewPlan(p=>({...p,days:p.days.filter((_,i)=>i!==di)}))} style={{background:"#fff0f0",border:`1px solid #f5b8b8`,borderRadius:10,color:"#c0392b",padding:"0 12px",fontSize:14}}>✕</button>}</div>)}
-    <button onClick={()=>setNewPlan(p=>({...p,days:[...p.days,{name:`Tag ${p.days.length+1}`,exercises:[]}]}))} style={{width:"100%",background:C2.bg,border:`1.5px dashed ${C2.border}`,borderRadius:12,color:C2.muted,padding:12,fontSize:13,marginBottom:16}}>+ Tag hinzufügen</button>
-    <button onClick={createPlan} disabled={!newPlan.name.trim()} style={{width:"100%",background:`linear-gradient(135deg,${C2.leaf},#3d6b4a)`,borderRadius:14,padding:14,color:"#fff",fontSize:15,fontWeight:700,border:"none",opacity:!newPlan.name.trim()?.5:1}}>✅ Plan erstellen</button>
+    <div style={{fontSize:10,color:mu,fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Trainingstage</div>
+    {newPlan.days.map((day,di)=><div key={di} style={{display:"flex",gap:8,marginBottom:8}}>
+      <input style={{...iS,flex:1,marginBottom:0}} value={day.name} onChange={e=>{const days=[...newPlan.days];days[di].name=e.target.value;setNewPlan(p=>({...p,days}));}} placeholder={`Tag ${di+1}`}/>
+      {newPlan.days.length>1&&<button onClick={()=>setNewPlan(p=>({...p,days:p.days.filter((_,i)=>i!==di)}))} style={{background:"#fff0f0",border:"1px solid #f5b8b8",borderRadius:10,color:"#c0392b",padding:"0 12px",fontSize:14}}>✕</button>}
+    </div>)}
+    <button onClick={()=>setNewPlan(p=>({...p,days:[...p.days,{name:`Tag ${p.days.length+1}`,exercises:[]}]}))} style={{width:"100%",background:bg,border:`1.5px dashed ${bdr}`,borderRadius:12,color:mu,padding:12,fontSize:13,marginBottom:16}}>+ Tag hinzufügen</button>
+    <button onClick={createPlan} disabled={!newPlan.name.trim()} style={{width:"100%",background:`linear-gradient(135deg,${lf},#3d6b4a)`,borderRadius:14,padding:14,color:"#fff",fontSize:15,fontWeight:700,border:"none",opacity:!newPlan.name.trim()?.5:1}}>✅ Plan erstellen</button>
   </div>;
 
-  if(view==="detail"&&sel)return<div>
-    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>{backBtn}<div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,flex:1,color:C2.text}}>{sel.name}</div><button onClick={()=>setView("logSession")} style={{background:C2.leafSoft,border:`1px solid ${C2.leaf}44`,borderRadius:10,color:C2.leaf,padding:"7px 14px",fontSize:12,fontWeight:700}}>▶ Start</button></div>
-    <div style={{display:"flex",gap:7,marginBottom:14,overflowX:"auto"}}>{sel.days.map((day,i)=><button key={i} onClick={()=>setDayIdx(i)} style={{flexShrink:0,padding:"7px 16px",borderRadius:10,fontSize:12,fontWeight:700,background:dayIdx===i?C2.leaf:C2.bg,color:dayIdx===i?"#fff":C2.muted,border:`1.5px solid ${dayIdx===i?C2.leaf:C2.border}`}}>{day.name}</button>)}</div>
-    {(sel.days[dayIdx].exercises||[]).map(ex=><div key={ex.id} style={{...card,display:"flex",alignItems:"center",gap:12}}>
-      <span style={{fontSize:24}}>{ex.emoji}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:C2.text}}>{ex.name}</div><div style={{fontSize:11,color:C2.muted,marginTop:1}}>{ex.sets} Sätze × {ex.reps}{ex.weight?` · ${ex.weight}kg`:""}</div>{ex.note&&<div style={{fontSize:10,color:C2.muted,marginTop:2,opacity:.7}}>{ex.note}</div>}</div>
-      <button onClick={()=>remEx(dayIdx,ex.id)} style={{background:"none",color:C2.muted,fontSize:16,padding:4}}>✕</button>
-    </div>)}
-    <div style={{background:C2.bg,borderRadius:16,padding:16,border:`1.5px dashed ${C2.border}`,marginTop:4}}>
-      <div style={{fontSize:10,color:C2.muted,fontWeight:700,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>+ Übung hinzufügen</div>
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>{emos.map(em=><button key={em} onClick={()=>setNewEx(e=>({...e,emoji:em}))} style={{background:newEx.emoji===em?C2.leafSoft:C2.surface,border:`1.5px solid ${newEx.emoji===em?C2.leaf:C2.border}`,borderRadius:8,padding:"6px 9px",fontSize:20}}>{em}</button>)}</div>
-      <input style={iS} placeholder="Übungsname (z.B. Bankdrücken)" value={newEx.name} onChange={e=>setNewEx(x=>({...x,name:e.target.value}))}/>
-      <div style={{display:"flex",gap:8,marginBottom:2}}>
-        <div style={{flex:1}}><div style={{fontSize:10,color:C2.muted,fontWeight:700,marginBottom:4,textTransform:"uppercase",letterSpacing:.4}}>Sätze</div><input type="number" style={iS} value={newEx.sets} onChange={e=>setNewEx(x=>({...x,sets:Number(e.target.value)}))}/></div>
-        <div style={{flex:1}}><div style={{fontSize:10,color:C2.muted,fontWeight:700,marginBottom:4,textTransform:"uppercase",letterSpacing:.4}}>Wiederh.</div><input style={iS} value={newEx.reps} onChange={e=>setNewEx(x=>({...x,reps:e.target.value}))} placeholder="z.B. 8–12"/></div>
-        <div style={{flex:1}}><div style={{fontSize:10,color:C2.muted,fontWeight:700,marginBottom:4,textTransform:"uppercase",letterSpacing:.4}}>KG</div><input type="number" style={iS} value={newEx.weight} onChange={e=>setNewEx(x=>({...x,weight:e.target.value}))} placeholder="Opt."/></div>
+  // ── VIEW: ÜBUNGSVORLAGEN ───────────────────────────────────────────────────
+  if(view==="templates")return<div>
+    <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+      {backBtn("← Zurück",()=>setView("detail"))}
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,color:tx}}>Übungsvorlagen</div>
+    </div>
+    {/* Muskelgruppen-Tabs */}
+    <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:14,paddingBottom:2}}>
+      {Object.keys(EXERCISE_TEMPLATES).map(m=>(
+        <button key={m} onClick={()=>setTemplateMuscle(m)} style={{flexShrink:0,padding:"8px 14px",borderRadius:10,fontSize:12,fontWeight:700,background:templateMuscle===m?lf:bg,color:templateMuscle===m?"#fff":mu,border:`1.5px solid ${templateMuscle===m?lf:bdr}`}}>
+          {m}
+        </button>
+      ))}
+    </div>
+    {/* Übungen der gewählten Gruppe */}
+    {EXERCISE_TEMPLATES[templateMuscle].map((tmpl,i)=>(
+      <div key={i} style={card}>
+        <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
+          <div style={{background:lfs,borderRadius:12,padding:8,flexShrink:0}}>
+            <ExerciseSketch type={tmpl.svg}/>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:800,color:tx,marginBottom:4}}>{tmpl.emoji} {tmpl.name}</div>
+            <div style={{fontSize:12,color:tx,lineHeight:1.6,marginBottom:6}}>{tmpl.desc}</div>
+            <div style={{background:"#faf2db",borderRadius:8,padding:"6px 10px",fontSize:11,color:"#7a6000",lineHeight:1.5}}>
+              💡 {tmpl.tips}
+            </div>
+          </div>
+        </div>
+        <button onClick={()=>addExFromTemplate(tmpl)} style={{width:"100%",background:`linear-gradient(135deg,${lf},#3d6b4a)`,borderRadius:12,padding:"11px",color:"#fff",fontSize:13,fontWeight:700,border:"none"}}>
+          + Zu {sel?.days[dayIdx]?.name||"Plan"} hinzufügen
+        </button>
       </div>
-      <input style={iS} placeholder="Notiz (optional)" value={newEx.note} onChange={e=>setNewEx(x=>({...x,note:e.target.value}))}/>
-      <button onClick={addEx} disabled={!newEx.name.trim()} style={{width:"100%",background:`linear-gradient(135deg,${C2.leaf},#3d6b4a)`,borderRadius:12,padding:13,color:"#fff",fontSize:14,fontWeight:700,border:"none",opacity:!newEx.name.trim()?.5:1}}>+ Übung hinzufügen</button>
+    ))}
+    {/* Eigene Übung hinzufügen */}
+    <div style={{...card,border:`1.5px dashed ${bdr}`,marginTop:4}}>
+      <div style={{fontSize:11,color:mu,fontWeight:700,marginBottom:12,textTransform:"uppercase",letterSpacing:.5}}>✏️ Eigene Übung erstellen</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+        {emos.map(em=><button key={em} onClick={()=>setCustomExEmoji(em)} style={{background:customExEmoji===em?lfs:sf,border:`1.5px solid ${customExEmoji===em?lf:bdr}`,borderRadius:8,padding:"6px 9px",fontSize:20}}>{em}</button>)}
+      </div>
+      <input style={iS} placeholder="Übungsname" value={customExName} onChange={e=>setCustomExName(e.target.value)}/>
+      <input style={iS} placeholder="Hinweis / Beschreibung (optional)" value={customExNote} onChange={e=>setCustomExNote(e.target.value)}/>
+      <button onClick={addCustomEx} disabled={!customExName.trim()} style={{width:"100%",background:`linear-gradient(135deg,${lf},#3d6b4a)`,borderRadius:12,padding:13,color:"#fff",fontSize:14,fontWeight:700,border:"none",opacity:!customExName.trim()?.5:1}}>
+        + Eigene Übung hinzufügen
+      </button>
     </div>
   </div>;
 
+  // ── VIEW: PLAN DETAIL ──────────────────────────────────────────────────────
+  if(view==="detail"&&sel)return<div>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+      {backBtn()}
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,flex:1,color:tx}}>{sel.name}</div>
+      <button onClick={()=>{const ex=sel.days[dayIdx].exercises||[];initSession(ex);setView("logSession");}} style={{background:lfs,border:`1px solid ${lf}44`,borderRadius:10,color:lf,padding:"7px 14px",fontSize:12,fontWeight:700}}>▶ Start</button>
+    </div>
+    {/* Tag-Tabs */}
+    <div style={{display:"flex",gap:7,marginBottom:14,overflowX:"auto"}}>
+      {sel.days.map((day,i)=><button key={i} onClick={()=>setDayIdx(i)} style={{flexShrink:0,padding:"7px 16px",borderRadius:10,fontSize:12,fontWeight:700,background:dayIdx===i?lf:bg,color:dayIdx===i?"#fff":mu,border:`1.5px solid ${dayIdx===i?lf:bdr}`}}>{day.name}</button>)}
+    </div>
+    {/* Übungen des Tages */}
+    {(sel.days[dayIdx].exercises||[]).length===0&&(
+      <div style={{textAlign:"center",padding:"28px 0",color:mu}}>
+        <div style={{fontSize:40,marginBottom:8}}>🏋️</div>
+        <div style={{fontSize:13}}>Noch keine Übungen für diesen Tag</div>
+      </div>
+    )}
+    {(sel.days[dayIdx].exercises||[]).map((ex,ei)=>(
+      <div key={ex.id} style={card}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          {ex.sketchType&&<div style={{background:lfs,borderRadius:10,padding:6,flexShrink:0}}><ExerciseSketch type={ex.sketchType}/></div>}
+          {!ex.sketchType&&<span style={{fontSize:24}}>{ex.emoji}</span>}
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:700,color:tx}}>{ex.name}</div>
+            <div style={{fontSize:11,color:mu,marginTop:1}}>{ex.sets} Sätze × {ex.reps}{ex.weight?` · ${ex.weight} kg`:""}</div>
+            {ex.note&&<div style={{fontSize:10,color:"#7a6000",marginTop:3,background:"#faf2db",padding:"4px 8px",borderRadius:6}}>{ex.note}</div>}
+          </div>
+          <button onClick={()=>remEx(dayIdx,ex.id)} style={{background:"none",color:mu,fontSize:16,padding:4,flexShrink:0}}>✕</button>
+        </div>
+      </div>
+    ))}
+    {/* Übung hinzufügen */}
+    <button onClick={()=>setView("templates")} style={{width:"100%",background:`linear-gradient(135deg,${lf},#3d6b4a)`,borderRadius:14,padding:14,color:"#fff",fontSize:14,fontWeight:700,border:"none",marginTop:4,boxShadow:`0 4px 16px ${lf}44`}}>
+      📚 Übungsvorlagen öffnen
+    </button>
+  </div>;
+
+  // ── VIEW: TRAINING SESSION ─────────────────────────────────────────────────
   if(view==="logSession"&&sel){
     const dayEx=sel.days[dayIdx].exercises||[];
+    const totalDone=Object.values(sessionSets).flat().filter(s=>s.done).length;
+    const totalSets=Object.values(sessionSets).flat().length;
     return<div>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}><button onClick={()=>setView("detail")} style={{background:C2.bg,border:`1px solid ${C2.border}`,borderRadius:10,color:C2.muted,padding:"7px 14px",fontSize:13}}>← Zurück</button><div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,color:C2.text}}>🏋️ Training</div></div>
-      <div style={{...card,background:C2.leafSoft,border:`1px solid ${C2.leaf}44`}}><div style={{fontWeight:700,fontSize:15,color:C2.text}}>{sel.name} · {sel.days[dayIdx].name}</div><div style={{fontSize:11,color:C2.muted,marginTop:2}}>{dayEx.length} Übungen</div></div>
-      {dayEx.map(ex=><div key={ex.id} style={card}>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}><span style={{fontSize:24}}>{ex.emoji}</span><div style={{flex:1}}><div style={{fontSize:13,fontWeight:700,color:C2.text}}>{ex.name}</div><div style={{fontSize:11,color:C2.muted}}>{ex.sets} × {ex.reps}</div></div></div>
-        <div style={{display:"flex",alignItems:"center",gap:10}}><label style={{fontSize:12,color:C2.muted,fontWeight:700,flexShrink:0}}>Gewicht (kg):</label><input type="number" inputMode="decimal" value={sw[ex.id]||ex.weight||""} onChange={e=>setSw(w=>({...w,[ex.id]:e.target.value}))} placeholder={ex.weight||"kg"} style={{flex:1,background:C2.bg,border:`1.5px solid ${C2.border}`,borderRadius:10,padding:"10px 14px",color:C2.text,fontSize:16,fontWeight:700,fontFamily:"inherit"}}/></div>
-      </div>)}
-      <button onClick={logSession} style={{width:"100%",background:`linear-gradient(135deg,${C2.leaf},#5c8f5a)`,borderRadius:14,padding:14,color:"#fff",fontSize:15,fontWeight:700,border:"none",marginTop:4,boxShadow:`0 4px 16px ${C2.leaf}44`}}>🎉 Training abschließen</button>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        {backBtn("← Zurück",()=>setView("detail"))}
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,color:tx}}>🏋️ Training</div>
+        <div style={{marginLeft:"auto",fontSize:12,fontWeight:700,color:lf}}>{totalDone}/{totalSets} Sätze</div>
+      </div>
+      {/* Progress bar */}
+      <div style={{height:5,background:bdr,borderRadius:3,marginBottom:14,overflow:"hidden"}}>
+        <div style={{height:"100%",background:`linear-gradient(90deg,${lf},#5c8f5a)`,borderRadius:3,width:totalSets?`${(totalDone/totalSets)*100}%`:"0%",transition:"width .4s"}}/>
+      </div>
+      <div style={{...card,background:lfs,border:`1px solid ${lf}44`,marginBottom:16}}>
+        <div style={{fontWeight:700,fontSize:14,color:tx}}>{sel.name} · {sel.days[dayIdx].name}</div>
+        <div style={{fontSize:11,color:mu,marginTop:2}}>{dayEx.length} Übungen</div>
+      </div>
+      {dayEx.map(ex=>{
+        const sets=sessionSets[ex.id]||[];
+        return(
+          <div key={ex.id} style={card}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+              <span style={{fontSize:22}}>{ex.emoji}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:700,color:tx}}>{ex.name}</div>
+                {ex.note&&<div style={{fontSize:10,color:"#7a6000",marginTop:2}}>{ex.note}</div>}
+              </div>
+            </div>
+            {/* Satz-Tabelle Header */}
+            <div style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 36px",gap:6,marginBottom:6}}>
+              <div style={{fontSize:10,color:mu,fontWeight:700,textAlign:"center"}}>Satz</div>
+              <div style={{fontSize:10,color:mu,fontWeight:700,textAlign:"center"}}>kg</div>
+              <div style={{fontSize:10,color:mu,fontWeight:700,textAlign:"center"}}>Wdh.</div>
+              <div/>
+            </div>
+            {/* Sätze */}
+            {sets.map((s,si)=>(
+              <div key={si} style={{display:"grid",gridTemplateColumns:"28px 1fr 1fr 36px",gap:6,marginBottom:7,alignItems:"center"}}>
+                <div style={{fontSize:12,fontWeight:700,color:s.done?lf:mu,textAlign:"center",background:s.done?lfs:"transparent",borderRadius:6,padding:"4px 0"}}>{si+1}</div>
+                <input
+                  type="number" inputMode="decimal"
+                  value={s.weight} placeholder="kg"
+                  onChange={e=>updateSet(ex.id,si,"weight",e.target.value)}
+                  style={{background:s.done?"#e8f0e9":bg,border:`1.5px solid ${s.done?lf:bdr}`,borderRadius:10,padding:"9px 10px",color:tx,fontSize:15,fontWeight:700,fontFamily:"inherit",textAlign:"center",width:"100%"}}
+                />
+                <input
+                  type="text" inputMode="decimal"
+                  value={s.reps} placeholder="Wdh."
+                  onChange={e=>updateSet(ex.id,si,"reps",e.target.value)}
+                  style={{background:s.done?"#e8f0e9":bg,border:`1.5px solid ${s.done?lf:bdr}`,borderRadius:10,padding:"9px 10px",color:tx,fontSize:15,fontWeight:700,fontFamily:"inherit",textAlign:"center",width:"100%"}}
+                />
+                <button onClick={()=>toggleSetDone(ex.id,si)} style={{background:s.done?lf:bg,border:`1.5px solid ${s.done?lf:bdr}`,borderRadius:10,padding:"9px 4px",fontSize:14,color:s.done?"#fff":mu,width:"100%"}}>
+                  {s.done?"✓":"○"}
+                </button>
+              </div>
+            ))}
+            {/* + / - Sätze */}
+            <div style={{display:"flex",gap:8,marginTop:4}}>
+              <button onClick={()=>removeSet(ex.id)} style={{flex:1,background:bg,border:`1px solid ${bdr}`,borderRadius:9,padding:"7px",fontSize:18,color:mu}}>−</button>
+              <div style={{flex:2,textAlign:"center",fontSize:11,color:mu,padding:"7px 0",fontWeight:600}}>{sets.length} {sets.length===1?"Satz":"Sätze"}</div>
+              <button onClick={()=>addSet(ex.id)} style={{flex:1,background:lfs,border:`1px solid ${lf}44`,borderRadius:9,padding:"7px",fontSize:18,color:lf}}>+</button>
+            </div>
+          </div>
+        );
+      })}
+      <button onClick={logSession} style={{width:"100%",background:`linear-gradient(135deg,${lf},#5c8f5a)`,borderRadius:14,padding:15,color:"#fff",fontSize:15,fontWeight:700,border:"none",marginTop:4,boxShadow:`0 4px 16px ${lf}44`}}>
+        🎉 Training abschließen
+      </button>
     </div>;
   }
 
-  return<div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:800,color:C2.text}}>🏋️ Training</div>
-      <button onClick={()=>setView("create")} style={{background:C2.leafSoft,border:`1px solid ${C2.leaf}44`,borderRadius:10,color:C2.leaf,padding:"8px 16px",fontSize:12,fontWeight:700}}>+ Neuer Plan</button>
-    </div>
-    {Object.keys(workoutLog).length>0&&<div style={card}>
-      <div style={{fontSize:10,color:C2.muted,fontWeight:700,letterSpacing:.5,marginBottom:12,textTransform:"uppercase"}}>Training letzte 14 Tage</div>
-      <div style={{display:"flex",alignItems:"flex-end",gap:3,height:52}}>{last14.map((d,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}><div style={{width:"100%",borderRadius:"3px 3px 0 0",background:d.count>0?C2.leaf:C2.border,height:`${(d.count/maxC)*44+(d.count>0?8:0)}px`,minHeight:4,transition:"height .4s"}}/>{i%4===0&&<div style={{fontSize:8,color:C2.muted}}>{d.label.split(".")[0]}</div>}</div>)}</div>
-    </div>}
-    {workoutPlans.length===0?(
-      <div style={{...card,textAlign:"center",padding:40,border:`1.5px dashed ${C2.border}`}}><div style={{fontSize:44,marginBottom:10}}>🏋️</div><div style={{color:C2.muted}}>Erstelle deinen ersten Plan</div></div>
-    ):workoutPlans.map(plan=><div key={plan.id} style={card}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-        <div style={{flex:1,cursor:"pointer",minWidth:0}} onClick={()=>{setSel(plan);setDayIdx(0);setView("detail");}}>
-          <div style={{fontSize:14,fontWeight:700,color:C2.text}}>{plan.name}</div>
-          <div style={{fontSize:11,color:C2.muted,marginTop:2}}>{plan.days.length} Tage · {plan.days.reduce((s,d)=>s+(d.exercises||[]).length,0)} Übungen</div>
-          <div style={{display:"flex",gap:5,marginTop:8,flexWrap:"wrap"}}>{plan.days.map((d,i)=><span key={i} style={{background:C2.bg,borderRadius:6,padding:"2px 9px",fontSize:10,color:C2.muted,border:`1px solid ${C2.border}`,fontWeight:600}}>{d.name}</span>)}</div>
-        </div>
-        <div style={{display:"flex",gap:8,marginLeft:10,flexShrink:0}}>
-          <button onClick={()=>{setSel(plan);setDayIdx(0);setView("detail");}} style={{background:C2.leafSoft,border:`1px solid ${C2.leaf}44`,borderRadius:9,color:C2.leaf,padding:"7px 12px",fontSize:11,fontWeight:700}}>Öffnen</button>
-          <button onClick={()=>delPlan(plan.id)} style={{background:"#fff0f0",border:`1px solid #f5b8b8`,borderRadius:9,color:"#c0392b",padding:"7px 10px",fontSize:14}}>🗑️</button>
+  // ── VIEW: FORTSCHRITT ──────────────────────────────────────────────────────
+  if(view==="progress"){
+    const allExNames=[...new Set(Object.values(workoutLog).flat().flatMap(s=>s.exercises?.map(e=>e.name)||[]))];
+    const pts=progressEx?getProgress(progressEx):[];
+    const W=300,H=100,PX=30,PY=10;
+    const minV=pts.length?Math.min(...pts.map(p=>p.weight))-2:0;
+    const maxV=pts.length?Math.max(...pts.map(p=>p.weight))+2:100;
+    const range=maxV-minV||1;
+    const iW=W-PX*2,iH=H-PY*2;
+    const px2=(i)=>PX+i*(iW/Math.max(pts.length-1,1));
+    const py2=(v)=>PY+iH-(v-minV)/range*iH;
+    return<div>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+        {backBtn("← Zurück",()=>setView("plans"))}
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,color:tx}}>📈 Trainingsfortschritt</div>
+      </div>
+      <div style={{...card,marginBottom:16}}>
+        <div style={{fontSize:11,color:mu,fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>Übung auswählen</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+          {allExNames.length===0&&<div style={{fontSize:12,color:mu}}>Noch keine Trainingseinheiten gespeichert.</div>}
+          {allExNames.map(n=>(
+            <button key={n} onClick={()=>setProgressEx(n)} style={{padding:"7px 12px",borderRadius:10,fontSize:12,fontWeight:700,background:progressEx===n?lf:bg,color:progressEx===n?"#fff":mu,border:`1.5px solid ${progressEx===n?lf:bdr}`}}>{n}</button>
+          ))}
         </div>
       </div>
-    </div>)}
+      {progressEx&&pts.length>=2&&(
+        <div style={card}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+            <div style={{fontSize:13,fontWeight:700,color:tx}}>{progressEx}</div>
+            <div style={{fontSize:12,color:lf,fontWeight:700}}>{pts[pts.length-1].weight} kg aktuell</div>
+          </div>
+          <div style={{fontSize:11,color:mu,marginBottom:8}}>
+            {pts.length} Einheiten · Start: {pts[0].weight} kg · {pts[pts.length-1].weight-pts[0].weight>=0?"+":""}{(pts[pts.length-1].weight-pts[0].weight).toFixed(1)} kg
+          </div>
+          <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible"}}>
+            <defs>
+              <linearGradient id="pGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={lf} stopOpacity="0.2"/>
+                <stop offset="100%" stopColor={lf} stopOpacity="0"/>
+              </linearGradient>
+            </defs>
+            {[0,0.5,1].map((t,i)=>{
+              const y=PY+iH*t;
+              const v=(maxV-range*t).toFixed(1);
+              return<g key={i}><line x1={PX} y1={y} x2={W-PX} y2={y} stroke={bdr} strokeWidth="1" strokeDasharray="3,3"/><text x={PX-4} y={y+4} fontSize="8" fill={mu} textAnchor="end">{v}</text></g>;
+            })}
+            <polygon points={`${px2(0)},${PY+iH} ${pts.map((_,i)=>`${px2(i)},${py2(pts[i].weight)}`).join(" ")} ${px2(pts.length-1)},${PY+iH}`} fill="url(#pGrad)"/>
+            <polyline points={pts.map((_,i)=>`${px2(i)},${py2(pts[i].weight)}`).join(" ")} fill="none" stroke={lf} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            {pts.map((p,i)=>(
+              <g key={i}>
+                <circle cx={px2(i)} cy={py2(p.weight)} r="4" fill={lf} stroke="white" strokeWidth="2"/>
+                {(i===0||i===pts.length-1)&&<text x={px2(i)} y={H+2} fontSize="7" fill={mu} textAnchor="middle">{new Date(p.date).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</text>}
+              </g>
+            ))}
+          </svg>
+        </div>
+      )}
+      {progressEx&&pts.length<2&&(
+        <div style={{...card,textAlign:"center",color:mu,padding:30}}>
+          <div style={{fontSize:32,marginBottom:8}}>📊</div>
+          <div style={{fontSize:13}}>Mindestens 2 Einheiten mit Gewicht nötig</div>
+        </div>
+      )}
+    </div>;
+  }
+
+  // ── VIEW: PLAN ÜBERSICHT ───────────────────────────────────────────────────
+  return<div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:800,color:tx}}>🏋️ Training</div>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>setView("progress")} style={{background:bg,border:`1px solid ${bdr}`,borderRadius:10,color:mu,padding:"8px 12px",fontSize:12,fontWeight:700}}>📈</button>
+        <button onClick={()=>setView("create")} style={{background:lfs,border:`1px solid ${lf}44`,borderRadius:10,color:lf,padding:"8px 16px",fontSize:12,fontWeight:700}}>+ Neuer Plan</button>
+      </div>
+    </div>
+    {/* 14-Tage-Chart */}
+    {Object.keys(workoutLog).length>0&&<div style={card}>
+      <div style={{fontSize:10,color:mu,fontWeight:700,letterSpacing:.5,marginBottom:12,textTransform:"uppercase"}}>Training letzte 14 Tage</div>
+      <div style={{display:"flex",alignItems:"flex-end",gap:3,height:52}}>
+        {last14.map((d,i)=><div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+          <div style={{width:"100%",borderRadius:"3px 3px 0 0",background:d.count>0?lf:bdr,height:`${(d.count/maxC)*44+(d.count>0?8:0)}px`,minHeight:4,transition:"height .4s"}}/>
+          {i%4===0&&<div style={{fontSize:8,color:mu}}>{d.label.split(".")[0]}</div>}
+        </div>)}
+      </div>
+    </div>}
+    {/* Pläne */}
+    {workoutPlans.length===0?(
+      <div style={{...card,textAlign:"center",padding:40,border:`1.5px dashed ${bdr}`}}>
+        <div style={{fontSize:44,marginBottom:10}}>🏋️</div>
+        <div style={{color:mu}}>Erstelle deinen ersten Plan</div>
+      </div>
+    ):workoutPlans.map(plan=>(
+      <div key={plan.id} style={card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{flex:1,cursor:"pointer",minWidth:0}} onClick={()=>{setSel(plan);setDayIdx(0);setView("detail");}}>
+            <div style={{fontSize:14,fontWeight:700,color:tx}}>{plan.name}</div>
+            <div style={{fontSize:11,color:mu,marginTop:2}}>{plan.days.length} Tage · {plan.days.reduce((s,d)=>s+(d.exercises||[]).length,0)} Übungen</div>
+            <div style={{display:"flex",gap:5,marginTop:8,flexWrap:"wrap"}}>
+              {plan.days.map((d,i)=><span key={i} style={{background:bg,borderRadius:6,padding:"2px 9px",fontSize:10,color:mu,border:`1px solid ${bdr}`,fontWeight:600}}>{d.name}</span>)}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,marginLeft:10,flexShrink:0}}>
+            <button onClick={()=>{setSel(plan);setDayIdx(0);setView("detail");}} style={{background:lfs,border:`1px solid ${lf}44`,borderRadius:9,color:lf,padding:"7px 12px",fontSize:11,fontWeight:700}}>Öffnen</button>
+            <button onClick={()=>delPlan(plan.id)} style={{background:"#fff0f0",border:"1px solid #f5b8b8",borderRadius:9,color:"#c0392b",padding:"7px 10px",fontSize:14}}>🗑️</button>
+          </div>
+        </div>
+      </div>
+    ))}
+    {/* Letzte Einheiten */}
     {Object.keys(workoutLog).length>0&&<div style={{marginTop:16}}>
-      <div style={{fontSize:10,color:C2.muted,fontWeight:700,letterSpacing:.5,marginBottom:10,textTransform:"uppercase"}}>Letzte Einheiten</div>
-      {Object.entries(workoutLog).sort((a,b)=>new Date(b[0])-new Date(a[0])).slice(0,4).flatMap(([dk,sessions])=>sessions.map((s,i)=><div key={`${dk}-${i}`} style={{...card,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:13,fontWeight:700,color:C2.text}}>{s.planName} · {s.dayName}</div><div style={{fontSize:11,color:C2.muted,marginTop:2}}>{dk===new Date().toDateString()?"Heute":new Date(dk).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} · {s.exercises.length} Übungen</div></div><span style={{fontSize:20}}>✅</span></div>))}
+      <div style={{fontSize:10,color:mu,fontWeight:700,letterSpacing:.5,marginBottom:10,textTransform:"uppercase"}}>Letzte Einheiten</div>
+      {Object.entries(workoutLog).sort((a,b)=>new Date(b[0])-new Date(a[0])).slice(0,4).flatMap(([dk,sessions])=>sessions.map((s,i)=>(
+        <div key={`${dk}-${i}`} style={{...card,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:tx}}>{s.planName} · {s.dayName}</div>
+            <div style={{fontSize:11,color:mu,marginTop:2}}>
+              {dk===new Date().toDateString()?"Heute":new Date(dk).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})} · {s.exercises?.length||0} Übungen
+            </div>
+          </div>
+          <span style={{fontSize:20}}>✅</span>
+        </div>
+      )))}
     </div>}
   </div>;
 }
