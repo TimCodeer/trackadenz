@@ -315,6 +315,7 @@ export default function TrackadenZ(){
   const[imgFile,setImgFile]=useState(null);
   const[imgPreview,setImgPreview]=useState(null);
   const[kbUp,setKbUp]=useState(false);
+  const[viewportH,setViewportH]=useState(typeof window!=="undefined"?window.innerHeight:800);
   const[ob,setOb]=useState({step:0,name:"",gender:"male",age:"",weight:"",height:"",activity:"moderate",goal:"maintain",sport:"none"});
   const videoRef=useRef(null);
   const canvasRef=useRef(null);
@@ -356,15 +357,19 @@ export default function TrackadenZ(){
     m.content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
   },[]);
 
-  // Keyboard detection – improved for iOS
+  // Keyboard detection – track exact viewport height for modal positioning
   useEffect(()=>{
     const onResize=()=>{
-      const ratio=window.visualViewport?window.visualViewport.height/window.screen.height:window.innerHeight/window.screen.height;
-      setKbUp(ratio<0.75);
+      const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      setViewportH(h);
+      setKbUp(h < window.screen.height * 0.75);
     };
-    window.visualViewport?.addEventListener("resize",onResize);
-    window.addEventListener("resize",onResize);
-    return()=>{window.visualViewport?.removeEventListener("resize",onResize);window.removeEventListener("resize",onResize);};
+    window.visualViewport?.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize);
+    return()=>{
+      window.visualViewport?.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", onResize);
+    };
   },[]);
 
   useEffect(()=>{
@@ -818,29 +823,54 @@ export default function TrackadenZ(){
         ))}
       </div>}
 
-      {/* ADD FOOD MODAL */}
-      {addModal&&<div style={{position:"fixed",inset:0,background:"rgba(44,36,22,0.4)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"stretch",animation:"fadeIn .15s ease"}} onClick={e=>{if(e.target===e.currentTarget)closeModal();}}>
-        {/* Spacer that closes modal when tapped – smaller when keyboard is up */}
-        <div onClick={closeModal} style={{flex:kbUp?0:1,minHeight:kbUp?0:60}}/>
-        <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:C.surface,borderRadius:kbUp?"0":"24px 24px 0 0",display:"flex",flexDirection:"column",height:kbUp?"100%":"auto",maxHeight:kbUp?"55svh":"93svh",boxShadow:"0 -8px 40px rgba(44,36,22,0.2)",animation:"slideUp .22s ease",flex:kbUp?1:"none"}}>
-          {/* Modal Header – always visible */}
-          <div style={{padding:"14px 16px 10px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+      {/* ADD FOOD MODAL – fixed to visible viewport so search stays above keyboard */}
+      {addModal&&<div
+        style={{position:"fixed",top:0,left:0,right:0,zIndex:1000,
+          height:viewportH,display:"flex",flexDirection:"column",
+          background:"rgba(44,36,22,0.45)",animation:"fadeIn .15s ease"}}
+        onClick={e=>{if(e.target===e.currentTarget)closeModal();}}
+      >
+        {/* Tap-to-close area at top */}
+        <div onClick={closeModal} style={{flex:1,minHeight:kbUp?8:60}}/>
+
+        {/* Modal panel – always fills bottom portion of visible viewport */}
+        <div style={{
+          width:"100%",maxWidth:480,margin:"0 auto",
+          background:C.surface,
+          borderRadius:kbUp?"16px 16px 0 0":"24px 24px 0 0",
+          display:"flex",flexDirection:"column",
+          height:kbUp?"auto":"auto",
+          maxHeight:kbUp?viewportH-8:viewportH*0.92,
+          boxShadow:"0 -8px 40px rgba(44,36,22,0.25)",
+          animation:"slideUp .22s ease",
+        }}>
+          {/* ── STICKY HEADER with search pinned inside ── */}
+          <div style={{flexShrink:0,padding:"14px 16px 10px",borderBottom:`1px solid ${C.border}`}}>
+            {/* Title row */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,color:C.text}}>
                 {MEAL_TYPES.find(m=>m.id===addModal.mealType)?.emoji} {MEAL_TYPES.find(m=>m.id===addModal.mealType)?.label}
               </div>
-              <button onClick={closeModal} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"5px 12px",fontSize:14}}>✕</button>
+              <button onClick={closeModal} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"5px 12px",fontSize:14,lineHeight:1}}>✕</button>
             </div>
             {/* Mode tabs */}
-            <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+            <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:addMode==="search"?10:0}}>
               {[{id:"search",l:"🔍 Suche"},{id:"favorites",l:"⭐ Fav"},{id:"ai",l:"🤖 KI"},{id:"image",l:"📸 Foto"},{id:"barcode",l:"▦ Scan"}].map(m=>(
-                <button key={m.id} onClick={()=>{if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}haptic("light");setAddMode(m.id);setAiResult(null);if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();}} style={{flexShrink:0,padding:"7px 12px",borderRadius:10,fontSize:11,fontWeight:700,background:addMode===m.id?C.leaf:C.bg,color:addMode===m.id?"#fff":C.muted,border:`1.5px solid ${addMode===m.id?C.leaf:C.border}`,transition:"all .15s"}}>
+                <button key={m.id} onClick={()=>{
+                  if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}
+                  haptic("light");setAddMode(m.id);setAiResult(null);
+                  if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();
+                }} style={{flexShrink:0,padding:"7px 12px",borderRadius:10,fontSize:11,fontWeight:700,
+                  background:addMode===m.id?C.leaf:C.bg,
+                  color:addMode===m.id?"#fff":C.muted,
+                  border:`1.5px solid ${addMode===m.id?C.leaf:C.border}`,
+                  transition:"all .15s"}}>
                   {m.l}
                 </button>
               ))}
             </div>
-            {/* Search input pinned in header when in search mode */}
-            {addMode==="search"&&<div style={{marginTop:10}}>
+            {/* Search input always visible in header when in search mode */}
+            {addMode==="search"&&(
               <input
                 ref={searchInputRef}
                 autoFocus
@@ -849,25 +879,27 @@ export default function TrackadenZ(){
                 placeholder="z.B. Cappuccino, Hühnchen, Reis…"
                 style={sInput({marginBottom:0})}
               />
-            </div>}
+            )}
           </div>
 
-          {/* Modal Body – scrollable results below */}
+          {/* ── SCROLLABLE BODY ── */}
           <div ref={modalBodyRef} style={{overflowY:"auto",padding:"12px 16px 28px",flex:1,WebkitOverflowScrolling:"touch"}}>
 
             {/* SEARCH RESULTS */}
             {addMode==="search"&&<div>
+              {!searchQ&&!selFood&&(
+                <div style={{textAlign:"center",padding:"20px 0",color:C.muted}}>
+                  <div style={{fontSize:32,marginBottom:8}}>🔍</div>
+                  <div style={{fontSize:13}}>Tippe um zu suchen</div>
+                  <div style={{fontSize:11,marginTop:4,color:C.dim}}>150+ Lebensmittel verfügbar</div>
+                </div>
+              )}
               {searchRes.map(food=>(
                 <button key={food.name} onClick={()=>handleSelectFood(food)} style={{width:"100%",background:selFood?.name===food.name?C.leafSoft:C.bg,border:`1.5px solid ${selFood?.name===food.name?C.leaf:C.border}`,borderRadius:14,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",color:C.text,textAlign:"left",transition:"all .15s"}}>
                   <span style={{fontSize:13,fontWeight:600}}>{food.emoji} {food.name}</span>
                   <span style={{fontSize:11,color:C.muted,flexShrink:0,marginLeft:8}}>{food.calories} kcal/100g</span>
                 </button>
               ))}
-              {!searchQ&&!selFood&&<div style={{textAlign:"center",padding:"24px 0",color:C.muted}}>
-                <div style={{fontSize:32,marginBottom:8}}>🔍</div>
-                <div style={{fontSize:13}}>Tippe um zu suchen</div>
-                <div style={{fontSize:11,marginTop:4,color:C.dim}}>150+ Lebensmittel verfügbar</div>
-              </div>}
               {selFood&&(()=>{const n=calcN(selFood,grams);return(
                 <div style={{background:C.leafSoft,borderRadius:16,padding:16,border:`1px solid ${C.borderStrong}`,marginTop:4,animation:"popIn .2s ease"}}>
                   <div style={{fontSize:15,fontWeight:700,marginBottom:14,color:C.text}}>{selFood.emoji} {selFood.name}</div>
