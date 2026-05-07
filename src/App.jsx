@@ -819,52 +819,57 @@ export default function TrackadenZ(){
       </div>}
 
       {/* ADD FOOD MODAL */}
-      {addModal&&<div style={{position:"fixed",inset:0,background:"rgba(44,36,22,0.4)",zIndex:1000,display:"flex",alignItems:"flex-end",animation:"fadeIn .15s ease"}} onClick={e=>{if(e.target===e.currentTarget)closeModal();}}>
-        <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:C.surface,borderRadius:"24px 24px 0 0",display:"flex",flexDirection:"column",maxHeight:"93svh",boxShadow:"0 -8px 40px rgba(44,36,22,0.2)",animation:"slideUp .25s ease"}}>
-          {/* Modal Header */}
-          <div style={{padding:"16px 18px 12px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:800,color:C.text}}>
+      {addModal&&<div style={{position:"fixed",inset:0,background:"rgba(44,36,22,0.4)",zIndex:1000,display:"flex",flexDirection:"column",alignItems:"stretch",animation:"fadeIn .15s ease"}} onClick={e=>{if(e.target===e.currentTarget)closeModal();}}>
+        {/* Spacer that closes modal when tapped – smaller when keyboard is up */}
+        <div onClick={closeModal} style={{flex:kbUp?0:1,minHeight:kbUp?0:60}}/>
+        <div style={{width:"100%",maxWidth:480,margin:"0 auto",background:C.surface,borderRadius:kbUp?"0":"24px 24px 0 0",display:"flex",flexDirection:"column",height:kbUp?"100%":"auto",maxHeight:kbUp?"55svh":"93svh",boxShadow:"0 -8px 40px rgba(44,36,22,0.2)",animation:"slideUp .22s ease",flex:kbUp?1:"none"}}>
+          {/* Modal Header – always visible */}
+          <div style={{padding:"14px 16px 10px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:800,color:C.text}}>
                 {MEAL_TYPES.find(m=>m.id===addModal.mealType)?.emoji} {MEAL_TYPES.find(m=>m.id===addModal.mealType)?.label}
               </div>
               <button onClick={closeModal} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:10,color:C.muted,padding:"5px 12px",fontSize:14}}>✕</button>
             </div>
-            <div style={{display:"flex",gap:6,overflowX:"auto"}}>
+            {/* Mode tabs */}
+            <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
               {[{id:"search",l:"🔍 Suche"},{id:"favorites",l:"⭐ Fav"},{id:"ai",l:"🤖 KI"},{id:"image",l:"📸 Foto"},{id:"barcode",l:"▦ Scan"}].map(m=>(
-                <button key={m.id} onClick={()=>{if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}haptic("light");setAddMode(m.id);setAiResult(null);if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();}} style={{flexShrink:0,padding:"8px 14px",borderRadius:10,fontSize:11,fontWeight:700,background:addMode===m.id?C.leaf:C.bg,color:addMode===m.id?"#fff":C.muted,border:`1.5px solid ${addMode===m.id?C.leaf:C.border}`,transition:"all .15s"}}>
+                <button key={m.id} onClick={()=>{if((m.id==="image"||m.id==="barcode")&&camPerm!=="granted"){requestCamera(m.id);return;}haptic("light");setAddMode(m.id);setAiResult(null);if(m.id==="barcode"&&camPerm==="granted")startScanner();else stopScanner();}} style={{flexShrink:0,padding:"7px 12px",borderRadius:10,fontSize:11,fontWeight:700,background:addMode===m.id?C.leaf:C.bg,color:addMode===m.id?"#fff":C.muted,border:`1.5px solid ${addMode===m.id?C.leaf:C.border}`,transition:"all .15s"}}>
                   {m.l}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Modal Body – keyboard-aware scroll */}
-          <div ref={modalBodyRef} style={{overflowY:"auto",padding:"14px 18px 32px",flex:1,WebkitOverflowScrolling:"touch"}}>
-
-            {/* SEARCH */}
-            {addMode==="search"&&<div>
+            {/* Search input pinned in header when in search mode */}
+            {addMode==="search"&&<div style={{marginTop:10}}>
               <input
                 ref={searchInputRef}
                 autoFocus
                 value={searchQ}
                 onChange={e=>handleSearch(e.target.value)}
                 placeholder="z.B. Cappuccino, Hühnchen, Reis…"
-                style={sInput({marginBottom:12})}
-                onFocus={()=>{
-                  setTimeout(()=>{
-                    searchInputRef.current?.scrollIntoView({behavior:"smooth",block:"start"});
-                    modalBodyRef.current?.scrollTo({top:0,behavior:"smooth"});
-                  },400);
-                }}
+                style={sInput({marginBottom:0})}
               />
+            </div>}
+          </div>
+
+          {/* Modal Body – scrollable results below */}
+          <div ref={modalBodyRef} style={{overflowY:"auto",padding:"12px 16px 28px",flex:1,WebkitOverflowScrolling:"touch"}}>
+
+            {/* SEARCH RESULTS */}
+            {addMode==="search"&&<div>
               {searchRes.map(food=>(
                 <button key={food.name} onClick={()=>handleSelectFood(food)} style={{width:"100%",background:selFood?.name===food.name?C.leafSoft:C.bg,border:`1.5px solid ${selFood?.name===food.name?C.leaf:C.border}`,borderRadius:14,padding:"12px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",color:C.text,textAlign:"left",transition:"all .15s"}}>
                   <span style={{fontSize:13,fontWeight:600}}>{food.emoji} {food.name}</span>
                   <span style={{fontSize:11,color:C.muted,flexShrink:0,marginLeft:8}}>{food.calories} kcal/100g</span>
                 </button>
               ))}
+              {!searchQ&&!selFood&&<div style={{textAlign:"center",padding:"24px 0",color:C.muted}}>
+                <div style={{fontSize:32,marginBottom:8}}>🔍</div>
+                <div style={{fontSize:13}}>Tippe um zu suchen</div>
+                <div style={{fontSize:11,marginTop:4,color:C.dim}}>150+ Lebensmittel verfügbar</div>
+              </div>}
               {selFood&&(()=>{const n=calcN(selFood,grams);return(
-                <div style={{background:C.leafSoft,borderRadius:16,padding:16,border:`1px solid ${C.borderStrong}`,marginTop:8,animation:"popIn .2s ease"}}>
+                <div style={{background:C.leafSoft,borderRadius:16,padding:16,border:`1px solid ${C.borderStrong}`,marginTop:4,animation:"popIn .2s ease"}}>
                   <div style={{fontSize:15,fontWeight:700,marginBottom:14,color:C.text}}>{selFood.emoji} {selFood.name}</div>
                   <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
                     <label style={{fontSize:12,color:C.textSec,fontWeight:700,flexShrink:0}}>Menge (g):</label>
