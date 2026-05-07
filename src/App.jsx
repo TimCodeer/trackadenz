@@ -1088,16 +1088,819 @@ const EXERCISE_TEMPLATES = {
   ],
 };
 
-// Kleine SVG-Skizzen für jede Übung
+// Detaillierte Strichmännchen-Skizzen für jede Übung
+// Jede Skizze zeigt 1-2 Positionen (Start + Ende) wie im Referenzbild
 function ExerciseSketch({type}){
-  const sketches = {
-    chest: <svg viewBox="0 0 80 50" width="80" height="50"><rect x="10" y="22" width="60" height="6" rx="3" fill="#4a7c59" opacity=".3"/><circle cx="40" cy="18" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="24" x2="40" y2="40" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="28" y2="42" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="52" y2="42" stroke="#4a7c59" strokeWidth="2"/><line x1="28" y1="28" x2="18" y2="24" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round"/><line x1="52" y1="28" x2="62" y2="24" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round"/></svg>,
-    squat: <svg viewBox="0 0 80 50" width="80" height="50"><circle cx="40" cy="8" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="14" x2="40" y2="26" stroke="#4a7c59" strokeWidth="2"/><line x1="20" y1="20" x2="60" y2="20" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round"/><line x1="40" y1="26" x2="28" y2="40" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="26" x2="52" y2="40" stroke="#4a7c59" strokeWidth="2"/><line x1="28" y1="40" x2="22" y2="50" stroke="#4a7c59" strokeWidth="2"/><line x1="52" y1="40" x2="58" y2="50" stroke="#4a7c59" strokeWidth="2"/></svg>,
-    deadlift: <svg viewBox="0 0 80 50" width="80" height="50"><circle cx="40" cy="10" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="16" x2="40" y2="30" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="30" x2="28" y2="44" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="30" x2="52" y2="44" stroke="#4a7c59" strokeWidth="2"/><rect x="8" y="42" width="64" height="5" rx="2.5" fill="#4a7c59" opacity=".35"/><circle cx="12" cy="44" r="4" fill="none" stroke="#4a7c59" strokeWidth="2"/><circle cx="68" cy="44" r="4" fill="none" stroke="#4a7c59" strokeWidth="2"/></svg>,
-    pullup: <svg viewBox="0 0 80 50" width="80" height="50"><rect x="10" y="4" width="60" height="5" rx="2.5" fill="#4a7c59" opacity=".4"/><circle cx="40" cy="18" r="6" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="24" x2="40" y2="38" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="28" y2="44" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="32" x2="52" y2="44" stroke="#4a7c59" strokeWidth="2"/><line x1="30" y1="9" x2="35" y2="18" stroke="#4a7c59" strokeWidth="2"/><line x1="50" y1="9" x2="45" y2="18" stroke="#4a7c59" strokeWidth="2"/></svg>,
-    default: <svg viewBox="0 0 80 50" width="80" height="50"><circle cx="40" cy="12" r="7" fill="none" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="19" x2="40" y2="34" stroke="#4a7c59" strokeWidth="2.5"/><line x1="40" y1="26" x2="26" y2="32" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="26" x2="54" y2="32" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="34" x2="30" y2="48" stroke="#4a7c59" strokeWidth="2"/><line x1="40" y1="34" x2="50" y2="48" stroke="#4a7c59" strokeWidth="2"/></svg>,
+  const c="#4a7c59", cL="#7aab88", w=2, wB=2.5;
+  // Helper: Strichmännchen stehend bei x,y (y=Kopf-Mitte)
+  // Skizzen zeigen typisch 2 Figuren: Startposition links, Endposition rechts
+  const sketches={
+
+    // ── BRUST ──────────────────────────────────────────────────────────────
+    chest:<svg viewBox="0 0 160 80" width="160" height="80" xmlns="http://www.w3.org/2000/svg">
+      {/* Bankdrücken: liegend, Stange hoch + runter */}
+      {/* Bank */}
+      <rect x="5" y="52" width="70" height="6" rx="3" fill={cL} opacity=".4"/>
+      {/* Person liegend – Stange unten (Brust) */}
+      <circle cx="20" cy="46" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="51" x2="20" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="15" y1="30" x2="55" y2="30" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="12" cy="30" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="58" cy="30" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="51" x2="16" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="51" x2="24" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="16" y1="38" x2="15" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="24" y1="38" x2="55" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="52" x2="16" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="52" x2="26" y2="60" stroke={c} strokeWidth={w}/>
+      {/* Pfeil rauf */}
+      <line x1="80" y1="35" x2="80" y2="18" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,14 77,21 83,21" fill={cL}/>
+      {/* Person liegend – Stange oben */}
+      <rect x="90" y="52" width="70" height="6" rx="3" fill={cL} opacity=".4"/>
+      <circle cx="105" cy="46" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="18" x2="160" y2="18" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="87" cy="18" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="163" cy="18" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="105" y1="51" x2="95" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="105" y1="51" x2="115" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="30" x2="90" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="115" y1="30" x2="160" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="105" y1="52" x2="101" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="105" y1="52" x2="111" y2="60" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    incline:<svg viewBox="0 0 160 85" width="160" height="85" xmlns="http://www.w3.org/2000/svg">
+      {/* Schrägbankdrücken */}
+      <line x1="5" y1="75" x2="75" y2="40" stroke={cL} strokeWidth="4" strokeLinecap="round" opacity=".5"/>
+      <rect x="5" y="72" width="8" height="12" rx="2" fill={cL} opacity=".4"/>
+      <circle cx="30" cy="34" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="39" x2="28" y2="50" stroke={c} strokeWidth={w}/>
+      <line x1="15" y1="28" x2="55" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="12" cy="28" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="58" cy="28" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="44" x2="18" y2="36" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="44" x2="55" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="50" x2="22" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="50" x2="38" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="38" x2="80" y2="20" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,16 77,23 83,23" fill={cL}/>
+      <line x1="100" y1="22" x2="160" y2="22" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="97" cy="22" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="163" cy="22" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <circle cx="120" cy="34" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="75" x2="160" y2="45" stroke={cL} strokeWidth="4" strokeLinecap="round" opacity=".5"/>
+      <line x1="120" y1="39" x2="118" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="49" x2="100" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="49" x2="158" y2="22" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="55" x2="112" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="55" x2="128" y2="63" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    fly:<svg viewBox="0 0 160 80" width="160" height="80" xmlns="http://www.w3.org/2000/svg">
+      {/* Fliegende: Arme weit unten → Arme oben zusammen */}
+      <rect x="5" y="52" width="70" height="6" rx="3" fill={cL} opacity=".4"/>
+      <circle cx="35" cy="46" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="51" x2="35" y2="52" stroke={c} strokeWidth={w}/>
+      {/* Arme weit offen */}
+      <line x1="35" y1="51" x2="8" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="51" x2="63" y2="42" stroke={c} strokeWidth={w}/>
+      <circle cx="6" cy="41" r="3" fill={c} opacity=".5"/><circle cx="65" cy="41" r="3" fill={c} opacity=".5"/>
+      <line x1="35" y1="52" x2="30" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="52" x2="41" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="40" x2="80" y2="24" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,20 77,27 83,27" fill={cL}/>
+      <rect x="90" y="52" width="70" height="6" rx="3" fill={cL} opacity=".4"/>
+      <circle cx="125" cy="46" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="51" x2="125" y2="52" stroke={c} strokeWidth={w}/>
+      {/* Arme oben zusammen */}
+      <line x1="125" y1="51" x2="108" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="51" x2="142" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="108" y1="30" x2="125" y2="26" stroke={c} strokeWidth={w}/>
+      <line x1="142" y1="30" x2="125" y2="26" stroke={c} strokeWidth={w}/>
+      <circle cx="125" cy="25" r="3" fill={c} opacity=".5"/>
+      <line x1="125" y1="52" x2="120" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="52" x2="131" y2="60" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    pushup:<svg viewBox="0 0 160 70" width="160" height="70" xmlns="http://www.w3.org/2000/svg">
+      {/* Liegestütz: oben gestreckt → unten gebeugt */}
+      {/* Position oben */}
+      <circle cx="18" cy="20" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="25" x2="55" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="25" x2="22" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="38" x2="8" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="55" y1="30" x2="60" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="8" y1="45" x2="60" y2="45" stroke={c} strokeWidth={w} strokeLinecap="round"/>
+      <line x1="8" y1="45" x2="5" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="45" x2="63" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="5" y1="52" x2="63" y2="52" stroke={cL} strokeWidth="1.5"/>
+      {/* Pfeil */}
+      <line x1="80" y1="38" x2="80" y2="55" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,58 77,51 83,51" fill={cL}/>
+      {/* Position unten */}
+      <circle cx="103" cy="30" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="103" y1="35" x2="140" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="103" y1="35" x2="100" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="48" x2="88" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="140" y1="38" x2="145" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="88" y1="52" x2="145" y2="52" stroke={cL} strokeWidth="1.5"/>
+      <line x1="88" y1="52" x2="86" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="145" y1="52" x2="148" y2="58" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    dips:<svg viewBox="0 0 120 90" width="120" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Dips: oben gestreckt → unten gebeugt */}
+      {/* Stangen */}
+      <line x1="15" y1="5" x2="15" y2="70" stroke={c} strokeWidth="3" strokeLinecap="round" opacity=".4"/>
+      <line x1="75" y1="5" x2="75" y2="70" stroke={c} strokeWidth="3" strokeLinecap="round" opacity=".4"/>
+      <line x1="10" y1="22" x2="80" y2="22" stroke={c} strokeWidth="3" strokeLinecap="round" opacity=".3"/>
+      {/* Person oben (gestreckt) */}
+      <circle cx="45" cy="14" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="45" y1="19" x2="45" y2="35" stroke={c} strokeWidth={w}/>
+      <line x1="15" y1="22" x2="45" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="75" y1="22" x2="45" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="45" y1="35" x2="38" y2="50" stroke={c} strokeWidth={w}/>
+      <line x1="45" y1="35" x2="52" y2="50" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="50" x2="36" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="52" y1="50" x2="54" y2="62" stroke={c} strokeWidth={w}/>
+      {/* Pfeil runter */}
+      <line x1="90" y1="25" x2="90" y2="48" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="90,52 87,45 93,45" fill={cL}/>
+      {/* Person unten (gebeugt, Ellbogen 90°) – kleiner daneben */}
+      <circle cx="110" cy="35" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="39" x2="110" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="38" x2="110" y2="46" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="38" x2="98" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="38" x2="110" y2="46" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="38" x2="122" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="52" x2="105" y2="64" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="52" x2="115" y2="64" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    // ── RÜCKEN ─────────────────────────────────────────────────────────────
+    deadlift:<svg viewBox="0 0 160 90" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Kreuzheben: gebeugt → aufrecht */}
+      {/* Hantelstange am Boden */}
+      <line x1="5" y1="75" x2="75" y2="75" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="8" cy="75" r="6" fill="none" stroke={c} strokeWidth={w}/><circle cx="72" cy="75" r="6" fill="none" stroke={c} strokeWidth={w}/>
+      {/* Person gebeugt */}
+      <circle cx="22" cy="22" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="27" x2="18" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="45" x2="8" y2="75" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="45" x2="35" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="27" x2="40" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="38" x2="45" y2="69" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="60" x2="30" y2="80" stroke={c} strokeWidth={w}/>
+      {/* Pfeil rauf */}
+      <line x1="80" y1="55" x2="80" y2="30" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,26 77,33 83,33" fill={cL}/>
+      {/* Person aufrecht mit Stange */}
+      <line x1="90" y1="75" x2="160" y2="75" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="93" cy="75" r="6" fill="none" stroke={c} strokeWidth={w}/><circle cx="157" cy="75" r="6" fill="none" stroke={c} strokeWidth={w}/>
+      <circle cx="125" cy="12" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="17" x2="125" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="115" y1="30" x2="155" y2="30" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="125" y1="38" x2="115" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="38" x2="135" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="115" y1="55" x2="112" y2="75" stroke={c} strokeWidth={w}/>
+      <line x1="135" y1="55" x2="138" y2="75" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    pullup:<svg viewBox="0 0 160 95" width="160" height="95" xmlns="http://www.w3.org/2000/svg">
+      {/* Klimmzüge: hängend → hochgezogen */}
+      <rect x="5" y="5" width="70" height="6" rx="3" fill={c} opacity=".45"/>
+      {/* Hängend */}
+      <circle cx="35" cy="24" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="25" y1="11" x2="35" y2="20" stroke={c} strokeWidth={w}/>
+      <line x1="45" y1="11" x2="35" y2="20" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="29" x2="35" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="38" x2="22" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="38" x2="48" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="48" x2="28" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="48" x2="42" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="65" x2="25" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="42" y1="65" x2="45" y2="78" stroke={c} strokeWidth={w}/>
+      {/* Pfeil rauf */}
+      <line x1="80" y1="60" x2="80" y2="30" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,26 77,33 83,33" fill={cL}/>
+      {/* Hochgezogen */}
+      <rect x="90" y="5" width="70" height="6" rx="3" fill={c} opacity=".45"/>
+      <circle cx="125" cy="18" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="115" y1="11" x2="118" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="135" y1="11" x2="132" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="23" x2="125" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="30" x2="112" y2="22" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="30" x2="138" y2="22" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="40" x2="118" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="125" y1="40" x2="132" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="55" x2="115" y2="70" stroke={c} strokeWidth={w}/>
+      <line x1="132" y1="55" x2="135" y2="70" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    row:<svg viewBox="0 0 160 85" width="160" height="85" xmlns="http://www.w3.org/2000/svg">
+      {/* Rudern LH: gebeugt, Stange unten → oben */}
+      <line x1="5" y1="72" x2="75" y2="72" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="8" cy="72" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="72" cy="72" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      {/* Stange unten */}
+      <circle cx="28" cy="18" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="23" x2="22" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="40" x2="18" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="40" x2="38" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="33" x2="12" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="33" x2="40" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="55" x2="35" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="42" x2="40" y2="65" stroke={c} strokeWidth={w}/>
+      {/* Pfeil rauf */}
+      <line x1="80" y1="55" x2="80" y2="32" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,28 77,35 83,35" fill={cL}/>
+      {/* Stange oben (zum Bauch) */}
+      <line x1="90" y1="72" x2="160" y2="72" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="93" cy="72" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="157" cy="72" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <circle cx="115" cy="18" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="115" y1="23" x2="110" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="40" x2="106" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="40" x2="126" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="33" x2="100" y2="50" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="50" x2="125" y2="50" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="97" cy="50" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="128" cy="50" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="126" y1="55" x2="123" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="128" y1="50" x2="128" y2="65" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    lat:<svg viewBox="0 0 120 95" width="120" height="95" xmlns="http://www.w3.org/2000/svg">
+      {/* Latziehen: sitzend, Stange oben → unten */}
+      {/* Maschine */}
+      <rect x="45" y="2" width="30" height="8" rx="3" fill={c} opacity=".3"/>
+      <line x1="60" y1="10" x2="60" y2="28" stroke={c} strokeWidth="1.5" strokeDasharray="3,2" opacity=".5"/>
+      {/* Sitz */}
+      <rect x="38" y="68" width="44" height="6" rx="3" fill={cL} opacity=".4"/>
+      {/* Person sitzend – Stange oben */}
+      <circle cx="60" cy="35" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="40" x2="60" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="48" x2="42" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="48" x2="78" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="58" x2="50" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="58" x2="70" y2="68" stroke={c} strokeWidth={w}/>
+      {/* Arme oben zur Stange */}
+      <line x1="42" y1="60" x2="30" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="78" y1="60" x2="90" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="28" x2="90" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="27" cy="28" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="93" cy="28" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      {/* Pfeil runter */}
+      <line x1="8" y1="20" x2="8" y2="52" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="8,56 5,49 11,49" fill={cL}/>
+    </svg>,
+
+    cable:<svg viewBox="0 0 120 90" width="120" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Kabelrudern sitzend */}
+      {/* Maschine links */}
+      <rect x="2" y="10" width="12" height="60" rx="3" fill={c} opacity=".2"/>
+      <circle cx="8" cy="45" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="13" y1="45" x2="55" y2="55" stroke={c} strokeWidth="1.5" strokeDasharray="3,2" opacity=".6"/>
+      {/* Sitz */}
+      <rect x="45" y="65" width="50" height="6" rx="3" fill={cL} opacity=".4"/>
+      {/* Person sitzend – Stange weit vorn */}
+      <circle cx="70" cy="30" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="70" y1="35" x2="70" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="70" y1="43" x2="55" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="70" y1="43" x2="85" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="70" y1="55" x2="60" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="70" y1="55" x2="80" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="55" y1="55" x2="20" y2="45" stroke={c} strokeWidth={w}/>
+      {/* Pfeil zurück */}
+      <line x1="30" y1="22" x2="55" y2="22" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="58,22 51,19 51,25" fill={cL}/>
+      <text x="15" y="18" fontSize="7" fill={cL}>ziehen</text>
+    </svg>,
+
+    // ── BEINE ──────────────────────────────────────────────────────────────
+    squat:<svg viewBox="0 0 160 90" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Kniebeugen: aufrecht → tief */}
+      {/* Stange auf Schultern */}
+      <line x1="5" y1="20" x2="75" y2="20" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="5" cy="20" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="75" cy="20" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <circle cx="38" cy="10" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="15" x2="38" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="20" x2="55" y2="20" stroke={c} strokeWidth={wB}/>
+      <line x1="38" y1="30" x2="28" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="30" x2="48" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="48" x2="24" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="48" y1="48" x2="52" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="24" y1="68" x2="20" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="52" y1="68" x2="56" y2="80" stroke={c} strokeWidth={w}/>
+      {/* Pfeil runter */}
+      <line x1="80" y1="25" x2="80" y2="55" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,59 77,52 83,52" fill={cL}/>
+      {/* Tief in der Hocke */}
+      <line x1="90" y1="42" x2="160" y2="42" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="90" cy="42" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="160" cy="42" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <circle cx="122" cy="20" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="122" y1="25" x2="118" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="107" y1="42" x2="138" y2="42" stroke={c} strokeWidth={wB}/>
+      <line x1="118" y1="38" x2="105" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="38" x2="130" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="105" y1="55" x2="100" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="130" y1="55" x2="140" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="68" x2="98" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="140" y1="68" x2="142" y2="80" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    legpress:<svg viewBox="0 0 140 90" width="140" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Beinpresse: Beine gestreckt → gebeugt */}
+      {/* Maschine/Sitz */}
+      <line x1="5" y1="30" x2="50" y2="5" stroke={c} strokeWidth="3" opacity=".3" strokeLinecap="round"/>
+      <rect x="5" y="28" width="30" height="38" rx="4" fill={cL} opacity=".2"/>
+      {/* Person liegend/sitzend – Beine gestreckt */}
+      <circle cx="22" cy="35" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="40" x2="22" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="55" x2="55" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="55" x2="55" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="55" y1="40" x2="80" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="55" y1="52" x2="80" y2="28" stroke={c} strokeWidth={w}/>
+      <rect x="75" y="12" width="12" height="22" rx="3" fill={c} opacity=".3"/>
+      {/* Pfeil */}
+      <line x1="95" y1="40" x2="110" y2="40" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="113,40 106,37 106,43" fill={cL}/>
+      {/* Beine gebeugt */}
+      <rect x="118" y="28" width="18" height="30" rx="4" fill={cL} opacity=".2"/>
+      <circle cx="122" cy="35" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="122" y1="40" x2="122" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="122" y1="55" x2="136" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="122" y1="55" x2="136" y2="56" stroke={c} strokeWidth={w}/>
+      <line x1="136" y1="48" x2="130" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="136" y1="56" x2="130" y2="38" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    lunge:<svg viewBox="0 0 160 90" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Ausfallschritte: stehend → Ausfallschritt */}
+      {/* Stehend */}
+      <circle cx="30" cy="10" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="15" x2="30" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="28" x2="42" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="15" cy="28" r="3" fill={c} opacity=".4"/><circle cx="45" cy="28" r="3" fill={c} opacity=".4"/>
+      <line x1="30" y1="40" x2="22" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="40" x2="38" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="60" x2="18" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="60" x2="42" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="12" y1="80" x2="48" y2="80" stroke={cL} strokeWidth="1.5"/>
+      {/* Pfeil rechts */}
+      <line x1="68" y1="40" x2="85" y2="40" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="88,40 81,37 81,43" fill={cL}/>
+      {/* Ausfallschritt */}
+      <circle cx="108" cy="10" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="108" y1="15" x2="108" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="28" x2="120" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="92" cy="28" r="3" fill={c} opacity=".4"/><circle cx="123" cy="28" r="3" fill={c} opacity=".4"/>
+      {/* Vorderes Bein */}
+      <line x1="108" y1="38" x2="118" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="58" x2="138" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="138" y1="65" x2="142" y2="80" stroke={c} strokeWidth={w}/>
+      {/* Hinteres Bein */}
+      <line x1="108" y1="38" x2="96" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="96" y1="55" x2="94" y2="78" stroke={c} strokeWidth={w}/>
+      <circle cx="94" cy="80" r="3" fill={c} opacity=".5"/>
+      <line x1="100" y1="80" x2="155" y2="80" stroke={cL} strokeWidth="1.5"/>
+    </svg>,
+
+    legcurl:<svg viewBox="0 0 120 80" width="120" height="80" xmlns="http://www.w3.org/2000/svg">
+      {/* Beinbeuger: liegend, Beine gestreckt → gebeugt */}
+      <rect x="5" y="40" width="110" height="8" rx="4" fill={cL} opacity=".3"/>
+      <rect x="85" y="22" width="30" height="18" rx="4" fill={cL} opacity=".2"/>
+      {/* Gestreckt */}
+      <circle cx="20" cy="32" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="37" x2="20" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="15" y1="40" x2="75" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="75" y1="40" x2="80" y2="34" stroke={c} strokeWidth={w}/>
+      <line x1="75" y1="40" x2="80" y2="44" stroke={c} strokeWidth={w}/>
+      <line x1="15" y1="40" x2="12" y2="34" stroke={c} strokeWidth={w}/>
+      {/* Pfeil gebeugt */}
+      <line x1="60" y1="24" x2="72" y2="10" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="75,7 68,12 73,17" fill={cL}/>
+      {/* Gebeugt */}
+      <circle cx="25" cy="32" r="5" fill="none" stroke={c} strokeWidth={w} opacity=".4"/>
+      <line x1="25" y1="37" x2="25" y2="42" stroke={c} strokeWidth={w} opacity=".4"/>
+      <line x1="20" y1="40" x2="60" y2="40" stroke={c} strokeWidth={w} opacity=".4"/>
+      <line x1="60" y1="40" x2="75" y2="15" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="40" x2="72" y2="14" stroke={c} strokeWidth={w} opacity=".5"/>
+    </svg>,
+
+    calf:<svg viewBox="0 0 120 90" width="120" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Wadenheben: Fersen unten → Zehenspitzen oben */}
+      {/* Stufe */}
+      <rect x="20" y="72" width="80" height="10" rx="3" fill={cL} opacity=".35"/>
+      <line x1="20" y1="72" x2="0" y2="72" stroke={cL} strokeWidth="2" opacity=".3"/>
+      {/* Fersen unten */}
+      <circle cx="40" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="20" x2="40" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="32" x2="52" y2="32" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="40" y1="40" x2="32" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="40" x2="48" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="58" x2="30" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="48" y1="58" x2="50" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="26" y1="80" x2="54" y2="80" stroke={c} strokeWidth={w}/>
+      {/* Pfeil rauf */}
+      <line x1="65" y1="65" x2="65" y2="45" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="65,41 62,48 68,48" fill={cL}/>
+      {/* Zehenspitzen */}
+      <circle cx="90" cy="8" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="13" x2="90" y2="33" stroke={c} strokeWidth={w}/>
+      <line x1="78" y1="25" x2="102" y2="25" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="90" y1="33" x2="82" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="33" x2="98" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="82" y1="52" x2="80" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="98" y1="52" x2="100" y2="62" stroke={c} strokeWidth={w}/>
+      {/* Auf Zehenspitzen */}
+      <line x1="75" y1="72" x2="82" y2="72" stroke={c} strokeWidth="2" strokeLinecap="round" opacity=".3"/>
+      <line x1="80" y1="68" x2="82" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="98" y1="68" x2="100" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="68" x2="100" y2="68" stroke={cL} strokeWidth="1.5"/>
+    </svg>,
+
+    // ── SCHULTER ───────────────────────────────────────────────────────────
+    ohp:<svg viewBox="0 0 160 95" width="160" height="95" xmlns="http://www.w3.org/2000/svg">
+      {/* Schulterdrücken: Stange unten → oben */}
+      {/* Stange auf Schultern */}
+      <circle cx="35" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="20" x2="35" y2="40" stroke={c} strokeWidth={w}/>
+      <line x1="8" y1="30" x2="62" y2="30" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="5" cy="30" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="65" cy="30" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="40" x2="25" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="40" x2="45" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="25" y1="60" x2="22" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="45" y1="60" x2="48" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="16" y1="80" x2="54" y2="80" stroke={cL} strokeWidth="1.5"/>
+      {/* Pfeil rauf */}
+      <line x1="80" y1="45" x2="80" y2="20" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,16 77,23 83,23" fill={cL}/>
+      {/* Stange über Kopf */}
+      <circle cx="120" cy="22" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="12" x2="155" y2="12" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="92" cy="12" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="158" cy="12" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="27" x2="120" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="12" x2="110" y2="32" stroke={c} strokeWidth={w}/>
+      <line x1="155" y1="12" x2="130" y2="32" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="45" x2="110" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="45" x2="130" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="65" x2="107" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="130" y1="65" x2="133" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="82" x2="140" y2="82" stroke={cL} strokeWidth="1.5"/>
+    </svg>,
+
+    lateral:<svg viewBox="0 0 160 90" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Seitheben: Arme unten → seitlich auf Höhe */}
+      {/* Arme unten */}
+      <circle cx="35" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="20" x2="35" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="32" x2="52" y2="32" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="18" y1="32" x2="12" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="52" y1="32" x2="58" y2="48" stroke={c} strokeWidth={w}/>
+      <circle cx="10" cy="50" r="3" fill={c} opacity=".5"/><circle cx="60" cy="50" r="3" fill={c} opacity=".5"/>
+      <line x1="35" y1="42" x2="26" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="42" x2="44" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="26" y1="62" x2="23" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="44" y1="62" x2="47" y2="78" stroke={c} strokeWidth={w}/>
+      {/* Pfeil rauf */}
+      <line x1="80" y1="48" x2="80" y2="28" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,24 77,31 83,31" fill={cL}/>
+      {/* Arme seitlich auf Schulterniveau */}
+      <circle cx="120" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="20" x2="120" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="93" y1="30" x2="147" y2="30" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="90" cy="30" r="3" fill={c} opacity=".5"/><circle cx="150" cy="30" r="3" fill={c} opacity=".5"/>
+      <line x1="93" y1="30" x2="120" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="30" x2="147" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="42" x2="111" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="42" x2="129" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="111" y1="62" x2="108" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="129" y1="62" x2="132" y2="78" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    frontraise:<svg viewBox="0 0 160 90" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Frontheben: Arm unten → vorne auf Schulterniveau */}
+      <circle cx="35" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="20" x2="35" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="20" y1="30" x2="50" y2="30" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="20" y1="30" x2="15" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="50" y1="30" x2="55" y2="48" stroke={c} strokeWidth={w}/>
+      <circle cx="55" cy="50" r="3" fill={c} opacity=".5"/>
+      <circle cx="13" cy="50" r="3" fill={c} opacity=".5"/>
+      <line x1="35" y1="42" x2="26" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="42" x2="44" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="26" y1="60" x2="22" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="44" y1="60" x2="48" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="42" x2="80" y2="25" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,21 77,28 83,28" fill={cL}/>
+      {/* Arm nach vorne oben */}
+      <circle cx="120" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="20" x2="120" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="105" y1="30" x2="135" y2="30" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="105" y1="30" x2="100" y2="50" stroke={c} strokeWidth={w}/>
+      {/* Arm vorne hoch */}
+      <line x1="135" y1="30" x2="155" y2="10" stroke={c} strokeWidth={w}/>
+      <circle cx="157" cy="9" r="3" fill={c} opacity=".5"/>
+      <line x1="120" y1="42" x2="111" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="42" x2="129" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="111" y1="60" x2="108" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="129" y1="60" x2="132" y2="78" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    rear:<svg viewBox="0 0 120 85" width="120" height="85" xmlns="http://www.w3.org/2000/svg">
+      {/* Reverse Flyes: Vorbeuge, Arme hängend → gespreizt */}
+      {/* Arme hängend */}
+      <circle cx="28" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="20" x2="22" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="30" x2="12" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="30" x2="32" y2="42" stroke={c} strokeWidth={w}/>
+      <circle cx="10" cy="44" r="3" fill={c} opacity=".5"/>
+      <circle cx="34" cy="44" r="3" fill={c} opacity=".5"/>
+      <line x1="22" y1="38" x2="14" y2="56" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="38" x2="30" y2="56" stroke={c} strokeWidth={w}/>
+      <line x1="14" y1="56" x2="10" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="56" x2="34" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="62" y1="38" x2="75" y2="38" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="78,38 71,35 71,41" fill={cL}/>
+      {/* Arme gespreizt */}
+      <circle cx="95" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="20" x2="90" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="30" x2="68" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="30" x2="112" y2="18" stroke={c} strokeWidth={w}/>
+      <circle cx="65" cy="16" r="3" fill={c} opacity=".5"/>
+      <circle cx="115" cy="16" r="3" fill={c} opacity=".5"/>
+      <line x1="90" y1="38" x2="82" y2="56" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="38" x2="98" y2="56" stroke={c} strokeWidth={w}/>
+      <line x1="82" y1="56" x2="78" y2="72" stroke={c} strokeWidth={w}/>
+      <line x1="98" y1="56" x2="102" y2="72" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    facepull:<svg viewBox="0 0 130 85" width="130" height="85" xmlns="http://www.w3.org/2000/svg">
+      {/* Face Pulls: Kabel auf Kopfhöhe */}
+      <rect x="2" y="12" width="12" height="50" rx="3" fill={c} opacity=".2"/>
+      <circle cx="8" cy="28" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="13" y1="28" x2="55" y2="28" stroke={c} strokeWidth="1.5" strokeDasharray="3,2" opacity=".5"/>
+      <circle cx="55" cy="28" r="3" fill={c} opacity=".4"/>
+      {/* Person – Arme gestreckt */}
+      <circle cx="80" cy="18" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="23" x2="80" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="65" y1="35" x2="95" y2="35" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="65" y1="35" x2="57" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="35" x2="108" y2="22" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="45" x2="70" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="45" x2="90" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="70" y1="65" x2="67" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="65" x2="93" y2="80" stroke={c} strokeWidth={w}/>
+      {/* Pfeil ziehen */}
+      <line x1="60" y1="18" x2="72" y2="18" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="75,18 68,15 68,21" fill={cL}/>
+      {/* Arme gebeugt – Ellbogen weit außen */}
+      <line x1="65" y1="35" x2="48" y2="20" stroke={c} strokeWidth={w} opacity=".4"/>
+      <line x1="95" y1="35" x2="112" y2="20" stroke={c} strokeWidth={w} opacity=".4"/>
+    </svg>,
+
+    // ── BIZEPS ─────────────────────────────────────────────────────────────
+    bbcurl:<svg viewBox="0 0 160 90" width="160" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Bizepscurl: Arme gestreckt → oben gecurlt */}
+      {/* Gestreckt */}
+      <circle cx="32" cy="12" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="17" x2="32" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="28" x2="46" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="18" y1="28" x2="12" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="46" y1="28" x2="52" y2="55" stroke={c} strokeWidth={w}/>
+      <line x1="8" y1="58" x2="62" y2="58" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="5" cy="58" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="65" cy="58" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="38" x2="22" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="38" x2="42" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="58" x2="18" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="42" y1="58" x2="46" y2="78" stroke={c} strokeWidth={w}/>
+      {/* Pfeil */}
+      <line x1="80" y1="50" x2="80" y2="28" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="80,24 77,31 83,31" fill={cL}/>
+      {/* Gecurlt */}
+      <circle cx="118" cy="12" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="17" x2="118" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="104" y1="28" x2="132" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      {/* Unterarme gebeugt */}
+      <line x1="104" y1="28" x2="96" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="132" y1="28" x2="140" y2="45" stroke={c} strokeWidth={w}/>
+      <line x1="96" y1="45" x2="100" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="140" y1="45" x2="136" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="96" y1="28" x2="142" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="93" cy="28" r="5" fill="none" stroke={c} strokeWidth={w}/><circle cx="145" cy="28" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="38" x2="108" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="118" y1="38" x2="128" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="108" y1="58" x2="104" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="128" y1="58" x2="132" y2="78" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    hammer:<svg viewBox="0 0 120 90" width="120" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Hammercurl: Daumen oben, seitlich gecurlt */}
+      <circle cx="32" cy="12" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="17" x2="32" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="28" x2="46" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="18" y1="28" x2="14" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="46" y1="28" x2="50" y2="52" stroke={c} strokeWidth={w}/>
+      {/* Hantel vertikal (Daumen oben) */}
+      <rect x="10" y="52" width="6" height="16" rx="3" fill={c} opacity=".5"/>
+      <rect x="46" y="52" width="6" height="16" rx="3" fill={c} opacity=".5"/>
+      <line x1="32" y1="38" x2="22" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="38" x2="42" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="58" x2="18" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="42" y1="58" x2="46" y2="78" stroke={c} strokeWidth={w}/>
+      {/* Gecurlt Seite 2 */}
+      <line x1="65" y1="40" x2="80" y2="40" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="83,40 76,37 76,43" fill={cL}/>
+      <circle cx="100" cy="12" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="17" x2="100" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="86" y1="28" x2="114" y2="28" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="86" y1="28" x2="80" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="38" x2="86" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="114" y1="28" x2="120" y2="38" stroke={c} strokeWidth={w}/>
+      <rect x="76" y="28" width="6" height="16" rx="3" fill={c} opacity=".5"/>
+      <line x1="100" y1="38" x2="90" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="38" x2="110" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="58" x2="86" y2="78" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="58" x2="114" y2="78" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    conc:<svg viewBox="0 0 100 90" width="100" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Konzentrationscurl: sitzend, Ellbogen am Oberschenkel */}
+      {/* Sitzende Position */}
+      <rect x="10" y="62" width="80" height="8" rx="4" fill={cL} opacity=".3"/>
+      <circle cx="45" cy="20" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="45" y1="25" x2="42" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="42" y1="42" x2="28" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="42" y1="42" x2="58" y2="62" stroke={c} strokeWidth={w}/>
+      {/* Arm gestützt */}
+      <line x1="42" y1="42" x2="34" y2="50" stroke={c} strokeWidth={w}/>
+      <line x1="34" y1="50" x2="30" y2="68" stroke={c} strokeWidth={w}/>
+      {/* Hantel unten */}
+      <circle cx="28" cy="72" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="23" y1="72" x2="33" y2="72" stroke={c} strokeWidth="3" strokeLinecap="round"/>
+      {/* Pfeil gecurlt */}
+      <line x1="18" y1="52" x2="8" y2="38" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="6,35 9,42 14,38" fill={cL}/>
+      {/* Gecurlt */}
+      <line x1="42" y1="42" x2="33" y2="35" stroke={c} strokeWidth={w} opacity=".5"/>
+      <line x1="33" y1="35" x2="28" y2="28" stroke={c} strokeWidth={w} opacity=".5"/>
+      <circle cx="26" cy="26" r="5" fill="none" stroke={c} strokeWidth={w} opacity=".4"/>
+    </svg>,
+
+    inccurl:<svg viewBox="0 0 120 95" width="120" height="95" xmlns="http://www.w3.org/2000/svg">
+      {/* Schrägbankscurl */}
+      <line x1="5" y1="88" x2="80" y2="40" stroke={c} strokeWidth="4" strokeLinecap="round" opacity=".3"/>
+      <rect x="5" y="85" width="10" height="12" rx="2" fill={cL} opacity=".4"/>
+      <circle cx="35" cy="30" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="35" y1="35" x2="32" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="52" x2="22" y2="70" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="52" x2="44" y2="65" stroke={c} strokeWidth={w}/>
+      {/* Arm hängend */}
+      <line x1="32" y1="44" x2="18" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="52" x2="12" y2="72" stroke={c} strokeWidth={w}/>
+      <circle cx="10" cy="74" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="6" y1="72" x2="14" y2="76" stroke={c} strokeWidth="3" strokeLinecap="round"/>
+      {/* Gecurlt */}
+      <line x1="65" y1="50" x2="78" y2="50" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="81,50 74,47 74,53" fill={cL}/>
+      <circle cx="100" cy="30" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="35" x2="97" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="97" y1="52" x2="87" y2="70" stroke={c} strokeWidth={w}/>
+      <line x1="97" y1="52" x2="110" y2="65" stroke={c} strokeWidth={w}/>
+      <line x1="97" y1="44" x2="86" y2="36" stroke={c} strokeWidth={w}/>
+      <line x1="86" y1="36" x2="82" y2="24" stroke={c} strokeWidth={w}/>
+      <circle cx="80" cy="22" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="76" y1="22" x2="84" y2="22" stroke={c} strokeWidth="3" strokeLinecap="round"/>
+    </svg>,
+
+    // ── TRIZEPS ────────────────────────────────────────────────────────────
+    tricpush:<svg viewBox="0 0 120 90" width="120" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Trizepsdrücken Kabel: Ellbogen oben → unten gestreckt */}
+      <rect x="45" y="2" width="30" height="8" rx="3" fill={c} opacity=".3"/>
+      <line x1="60" y1="10" x2="60" y2="28" stroke={c} strokeWidth="1.5" strokeDasharray="3,2" opacity=".5"/>
+      <circle cx="60" cy="28" r="3" fill={c} opacity=".4"/>
+      {/* Person */}
+      <circle cx="60" cy="20" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="25" x2="60" y2="48" stroke={c} strokeWidth={w}/>
+      <line x1="45" y1="38" x2="75" y2="38" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      {/* Arme gebeugt oben */}
+      <line x1="45" y1="38" x2="42" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="75" y1="38" x2="78" y2="28" stroke={c} strokeWidth={w}/>
+      <line x1="42" y1="28" x2="50" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="78" y1="28" x2="70" y2="30" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="48" x2="50" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="60" y1="48" x2="70" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="50" y1="68" x2="47" y2="82" stroke={c} strokeWidth={w}/>
+      <line x1="70" y1="68" x2="73" y2="82" stroke={c} strokeWidth={w}/>
+      {/* Pfeil runter */}
+      <line x1="20" y1="30" x2="20" y2="55" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="20,58 17,51 23,51" fill={cL}/>
+      {/* Arme gestreckt unten */}
+      <line x1="45" y1="38" x2="40" y2="60" stroke={c} strokeWidth={w} opacity=".5"/>
+      <line x1="75" y1="38" x2="80" y2="60" stroke={c} strokeWidth={w} opacity=".5"/>
+      <line x1="38" y1="60" x2="48" y2="60" stroke={c} strokeWidth={wB} strokeLinecap="round" opacity=".5"/>
+      <circle cx="35" cy="60" r="3" fill={c} opacity=".3"/><circle cx="51" cy="60" r="3" fill={c} opacity=".3"/>
+    </svg>,
+
+    skull:<svg viewBox="0 0 120 80" width="120" height="80" xmlns="http://www.w3.org/2000/svg">
+      {/* Skull Crusher: liegend, Stange runter → hoch */}
+      <rect x="5" y="52" width="110" height="6" rx="3" fill={cL} opacity=".3"/>
+      {/* Stange unten (zur Stirn) */}
+      <circle cx="30" cy="44" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="49" x2="30" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="52" x2="24" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="52" x2="36" y2="60" stroke={c} strokeWidth={w}/>
+      {/* Ellbogen oben, Unterarme zur Stirn */}
+      <line x1="20" y1="44" x2="55" y2="44" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="20" y1="44" x2="16" y2="32" stroke={c} strokeWidth={w}/>
+      <line x1="55" y1="44" x2="52" y2="32" stroke={c} strokeWidth={w}/>
+      <line x1="14" y1="25" x2="60" y2="25" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="11" cy="25" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="63" cy="25" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      {/* Pfeil */}
+      <line x1="70" y1="35" x2="85" y2="35" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="88,35 81,32 81,38" fill={cL}/>
+      {/* Stange oben (gestreckt) */}
+      <circle cx="95" cy="44" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="49" x2="95" y2="52" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="52" x2="89" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="95" y1="52" x2="101" y2="60" stroke={c} strokeWidth={w}/>
+      <line x1="85" y1="44" x2="120" y2="44" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="85" y1="44" x2="82" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="120" y1="44" x2="118" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="78" y1="12" x2="124" y2="12" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="75" cy="12" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="127" cy="12" r="4" fill="none" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    tricdip:<svg viewBox="0 0 100 90" width="100" height="90" xmlns="http://www.w3.org/2000/svg">
+      {/* Dips Trizeps: aufrecht an Bank */}
+      <rect x="5" y="58" width="90" height="8" rx="4" fill={cL} opacity=".3"/>
+      <rect x="60" y="38" width="35" height="8" rx="4" fill={cL} opacity=".35"/>
+      {/* Person oben gestreckt */}
+      <circle cx="38" cy="18" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="23" x2="38" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="25" y1="35" x2="68" y2="35" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="25" y1="35" x2="20" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="68" y1="35" x2="68" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="42" x2="30" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="38" y1="42" x2="46" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="30" y1="58" x2="28" y2="74" stroke={c} strokeWidth={w}/>
+      <line x1="46" y1="58" x2="48" y2="74" stroke={c} strokeWidth={w}/>
+      {/* Pfeil runter */}
+      <line x1="8" y1="30" x2="8" y2="52" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="8,55 5,48 11,48" fill={cL}/>
+      {/* Tief abgesenkt */}
+      <circle cx="80" cy="28" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="33" x2="80" y2="50" stroke={c} strokeWidth={w}/>
+      <line x1="68" y1="42" x2="94" y2="42" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <line x1="68" y1="42" x2="62" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="94" y1="42" x2="94" y2="58" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="50" x2="72" y2="66" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="50" x2="88" y2="66" stroke={c} strokeWidth={w}/>
+      <line x1="72" y1="66" x2="70" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="88" y1="66" x2="90" y2="80" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    tricoverhead:<svg viewBox="0 0 120 95" width="120" height="95" xmlns="http://www.w3.org/2000/svg">
+      {/* Überkopf Trizeps: Hantel hinter Kopf → gestreckt */}
+      {/* Gebeugt (hinter Kopf) */}
+      <circle cx="32" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="20" x2="32" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="18" y1="32" x2="46" y2="32" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      {/* Ellbogen oben, Unterarm hinter Kopf */}
+      <line x1="18" y1="32" x2="16" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="46" y1="32" x2="48" y2="18" stroke={c} strokeWidth={w}/>
+      <line x1="16" y1="18" x2="32" y2="38" stroke={c} strokeWidth={w}/>
+      <line x1="48" y1="18" x2="32" y2="38" stroke={c} strokeWidth={w}/>
+      <circle cx="32" cy="42" r="6" fill="none" stroke={c} strokeWidth={w} opacity=".3"/>
+      <line x1="26" y1="42" x2="38" y2="42" stroke={c} strokeWidth="3" strokeLinecap="round" opacity=".5"/>
+      <line x1="32" y1="42" x2="22" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="32" y1="42" x2="42" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="22" y1="62" x2="18" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="42" y1="62" x2="46" y2="80" stroke={c} strokeWidth={w}/>
+      {/* Pfeil */}
+      <line x1="65" y1="40" x2="78" y2="40" stroke={cL} strokeWidth="1.5" strokeDasharray="3,2"/>
+      <polygon points="81,40 74,37 74,43" fill={cL}/>
+      {/* Gestreckt (Hantel oben) */}
+      <circle cx="100" cy="15" r="5" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="20" x2="100" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="86" y1="32" x2="114" y2="32" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      {/* Arme gestreckt nach oben */}
+      <line x1="86" y1="32" x2="84" y2="8" stroke={c} strokeWidth={w}/>
+      <line x1="114" y1="32" x2="116" y2="8" stroke={c} strokeWidth={w}/>
+      <line x1="80" y1="4" x2="120" y2="4" stroke={c} strokeWidth={wB} strokeLinecap="round"/>
+      <circle cx="77" cy="4" r="4" fill="none" stroke={c} strokeWidth={w}/><circle cx="123" cy="4" r="4" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="42" x2="90" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="100" y1="42" x2="110" y2="62" stroke={c} strokeWidth={w}/>
+      <line x1="90" y1="62" x2="86" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="110" y1="62" x2="114" y2="80" stroke={c} strokeWidth={w}/>
+    </svg>,
+
+    default:<svg viewBox="0 0 80 80" width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="40" cy="14" r="7" fill="none" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="21" x2="40" y2="45" stroke={c} strokeWidth={wB}/>
+      <line x1="40" y1="32" x2="22" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="32" x2="58" y2="42" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="45" x2="28" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="40" y1="45" x2="52" y2="68" stroke={c} strokeWidth={w}/>
+      <line x1="28" y1="68" x2="24" y2="80" stroke={c} strokeWidth={w}/>
+      <line x1="52" y1="68" x2="56" y2="80" stroke={c} strokeWidth={w}/>
+    </svg>,
   };
-  return sketches[type] || sketches.default;
+  return sketches[type]||sketches.default;
 }
 
 function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,showNotif}){
