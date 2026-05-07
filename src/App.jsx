@@ -244,29 +244,17 @@ const sInput=(extra={})=>({width:"100%",background:C.surface,border:`1.5px solid
 const sCard=(extra={})=>({background:C.card,borderRadius:20,padding:"16px 18px",border:`1px solid ${C.border}`,boxShadow:C.shadow,...extra});
 
 // ── TZ Monogram Icon (SVG) ────────────────────────────────────────────────────
+const LOGO_SRC = "data:image/png;base64,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";
+
 function TZIcon({size=48}){
   return(
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Leaf background */}
-      <defs>
-        <radialGradient id="bgGrad" cx="40%" cy="40%" r="65%">
-          <stop offset="0%" stopColor="#5c8f5a"/>
-          <stop offset="100%" stopColor="#2d5a30"/>
-        </radialGradient>
-      </defs>
-      <rect width="100" height="100" rx="22" fill="url(#bgGrad)"/>
-      {/* Decorative leaves */}
-      <ellipse cx="78" cy="22" rx="18" ry="9" fill="#4a7c59" opacity="0.5" transform="rotate(-35 78 22)"/>
-      <ellipse cx="20" cy="80" rx="16" ry="8" fill="#3d6b4a" opacity="0.4" transform="rotate(30 20 80)"/>
-      <ellipse cx="82" cy="72" rx="12" ry="6" fill="#5c8f5a" opacity="0.35" transform="rotate(-55 82 72)"/>
-      {/* T */}
-      <rect x="18" y="25" width="40" height="7" rx="3.5" fill="white" opacity="0.95"/>
-      <rect x="32" y="25" width="7" height="42" rx="3.5" fill="white" opacity="0.95"/>
-      {/* Z overlapping */}
-      <rect x="42" y="38" width="38" height="6" rx="3" fill="white"/>
-      <path d="M72 38 L44 68" stroke="white" strokeWidth="6" strokeLinecap="round"/>
-      <rect x="42" y="62" width="38" height="6" rx="3" fill="white"/>
-    </svg>
+    <img
+      src={LOGO_SRC}
+      width={size}
+      height={size}
+      alt="TrackadenZ"
+      style={{borderRadius: size*0.22, display:"block", flexShrink:0}}
+    />
   );
 }
 
@@ -816,7 +804,7 @@ export default function TrackadenZ(){
         </div>}
 
         {tab==="workout"&&<WorkoutTab workoutPlans={workoutPlans} workoutLog={workoutLog} saveWorkoutPlans={saveWP} saveWorkoutLog={saveWL} showNotif={showNotif}/>}
-        {tab==="profile"&&user&&<ProfileTab user={user} goals={goals} bmi={bmi} stepsPerm={stepsPerm} requestSteps={requestSteps} setGoals={setGoals} showNotif={showNotif}/>}
+        {tab==="profile"&&user&&<ProfileTab user={user} setUser={setUser} goals={goals} bmi={bmi} stepsPerm={stepsPerm} requestSteps={requestSteps} setGoals={setGoals} showNotif={showNotif}/>}
       </div>
 
       {/* Bottom Nav */}
@@ -1116,36 +1104,165 @@ function WorkoutTab({workoutPlans,workoutLog,saveWorkoutPlans,saveWorkoutLog,sho
 }
 
 // ─── PROFILE TAB ─────────────────────────────────────────────────────────────
-function ProfileTab({user,goals,bmi,stepsPerm,requestSteps,setGoals,showNotif}){
+function WeightChart({entries}){
+  if(!entries||entries.length<2)return null;
+  const W=320,H=120,PX=36,PY=16;
+  const vals=entries.map(e=>e.weight);
+  const dates=entries.map(e=>e.date);
+  const minV=Math.min(...vals)-1;
+  const maxV=Math.max(...vals)+1;
+  const range=maxV-minV||1;
+  const iW=W-PX*2,iH=H-PY*2;
+  const px=(i)=>PX+i*(iW/(entries.length-1));
+  const py=(v)=>PY+iH-(v-minV)/range*iH;
+  const points=entries.map((e,i)=>`${px(i)},${py(e.weight)}`).join(" ");
+  const areaPoints=`${PX},${PY+iH} ${points} ${px(entries.length-1)},${PY+iH}`;
+  return(
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible",marginTop:8}}>
+      <defs>
+        <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4a7c59" stopOpacity="0.25"/>
+          <stop offset="100%" stopColor="#4a7c59" stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      {/* Grid lines */}
+      {[0,0.33,0.66,1].map((t,i)=>{
+        const y=PY+iH*t;
+        const v=(maxV-range*t).toFixed(1);
+        return <g key={i}>
+          <line x1={PX} y1={y} x2={W-PX} y2={y} stroke="#d4c9a8" strokeWidth="1" strokeDasharray="3,3"/>
+          <text x={PX-4} y={y+4} fontSize="8" fill="#8c7d65" textAnchor="end">{v}</text>
+        </g>;
+      })}
+      {/* Area fill */}
+      <polygon points={areaPoints} fill="url(#wGrad)"/>
+      {/* Line */}
+      <polyline points={points} fill="none" stroke="#4a7c59" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Dots + date labels */}
+      {entries.map((e,i)=>{
+        const x=px(i),y=py(e.weight);
+        const label=new Date(e.date).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"});
+        return <g key={i}>
+          <circle cx={x} cy={y} r="4" fill="#4a7c59" stroke="white" strokeWidth="2"/>
+          {(i===0||i===entries.length-1||entries.length<=6)&&<text x={x} y={H-2} fontSize="7.5" fill="#8c7d65" textAnchor="middle">{label}</text>}
+        </g>;
+      })}
+    </svg>
+  );
+}
+
+function ProfileTab({user,setUser,goals,bmi,stepsPerm,requestSteps,setGoals,showNotif}){
   const[editG,setEditG]=useState(goals);
   const[gOpen,setGOpen]=useState(false);
-  const bmiCat=bmi<18.5?"Untergewicht":bmi<25?"Normalgewicht ✓":bmi<30?"Übergewicht":"Adipositas";
+  const[weightOpen,setWeightOpen]=useState(false);
+  const[newWeight,setNewWeight]=useState(String(user.weight));
+  const[weightLog,setWeightLog]=useState(()=>ls("tz_weight_log",[{date:user.createdAt||new Date().toISOString(),weight:user.weight}]));
+
+  const currentBmi=user.weight&&user.height?(user.weight/((user.height/100)**2)).toFixed(1):bmi;
+  const bmiCat=currentBmi<18.5?"Untergewicht":currentBmi<25?"Normalgewicht ✓":currentBmi<30?"Übergewicht":"Adipositas";
+  
   const save=()=>{setGoals(editG);lsSet(K.GOALS,editG);setGOpen(false);showNotif("🎯 Ziele gespeichert!");};
-  const card={background:"#faf8f2",borderRadius:18,padding:"14px 16px",border:`1px solid #d4c9a8`,boxShadow:"0 2px 16px rgba(74,124,89,0.10)",marginBottom:12};
+  
+  const saveWeight=()=>{
+    const w=parseFloat(newWeight);
+    if(!w||w<20||w>300)return;
+    const today=new Date().toISOString();
+    // Update user weight
+    const updatedUser={...user,weight:w};
+    setUser(updatedUser);
+    lsSet(K.USER,updatedUser);
+    // Update TDEE goals
+    const newGoals={...goals,calories:calcTDEE(updatedUser)||goals.calories,protein:calcProt(updatedUser)};
+    setGoals(newGoals);lsSet(K.GOALS,newGoals);
+    // Log weight entry
+    const newLog=[...weightLog,{date:today,weight:w}];
+    setWeightLog(newLog);lsSet("tz_weight_log",newLog);
+    setWeightOpen(false);
+    showNotif(`⚖️ Gewicht aktualisiert: ${w} kg`);
+  };
+
+  const card={background:"#faf8f2",borderRadius:18,padding:"14px 16px",border:"1px solid #d4c9a8",boxShadow:"0 2px 16px rgba(74,124,89,0.10)",marginBottom:12};
+  
   return<div>
-    <div style={{...card,background:`linear-gradient(135deg,#e8f0e9,#faf2db)`,border:`1px solid #b8a878`,textAlign:"center",padding:"28px 20px"}}>
-      <div style={{width:64,height:64,borderRadius:"50%",background:`linear-gradient(135deg,#4a7c59,#5c7a4e)`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:26,color:"#fff",boxShadow:`0 4px 16px #4a7c5944`}}>{user.name?.[0]?.toUpperCase()}</div>
+    {/* Profile header */}
+    <div style={{...card,background:"linear-gradient(135deg,#e8f0e9,#faf2db)",border:"1px solid #b8a878",textAlign:"center",padding:"28px 20px"}}>
+      <div style={{width:64,height:64,borderRadius:"50%",background:"linear-gradient(135deg,#4a7c59,#5c7a4e)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px",fontFamily:"'Playfair Display',serif",fontWeight:800,fontSize:26,color:"#fff",boxShadow:"0 4px 16px #4a7c5944"}}>{user.name?.[0]?.toUpperCase()}</div>
       <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:800,color:"#2c2416"}}>{user.name}</div>
       <div style={{fontSize:12,color:"#8c7d65",marginTop:3}}>{user.gender==="male"?"Männlich":"Weiblich"} · {user.age} Jahre</div>
     </div>
+
+    {/* Stats row */}
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
-      {[{l:"Gewicht",v:`${user.weight}kg`,c:"#4a7c59"},{l:"Größe",v:`${user.height}cm`,c:"#d4784a"},{l:"BMI",v:bmi,c:bmi<25?"#5c7a4e":"#c9a227"}].map(s=><div key={s.l} style={{...card,textAlign:"center",marginBottom:0}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:800,color:s.c}}>{s.v}</div>
-        <div style={{fontSize:10,color:"#8c7d65",marginTop:2,fontWeight:700}}>{s.l}</div>
-      </div>)}
+      {/* Gewicht – klickbar */}
+      <button onClick={()=>{setNewWeight(String(user.weight));setWeightOpen(w=>!w);}} style={{...card,textAlign:"center",marginBottom:0,cursor:"pointer",border:weightOpen?"1.5px solid #4a7c59":"1px solid #d4c9a8",background:weightOpen?"#e8f0e9":"#faf8f2"}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:800,color:"#4a7c59"}}>{user.weight}<span style={{fontSize:11,fontWeight:400}}>kg</span></div>
+        <div style={{fontSize:10,color:"#8c7d65",marginTop:2,fontWeight:700}}>Gewicht ✏️</div>
+      </button>
+      <div style={{...card,textAlign:"center",marginBottom:0}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:800,color:"#d4784a"}}>{user.height}<span style={{fontSize:11,fontWeight:400}}>cm</span></div>
+        <div style={{fontSize:10,color:"#8c7d65",marginTop:2,fontWeight:700}}>Größe</div>
+      </div>
+      <div style={{...card,textAlign:"center",marginBottom:0}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:800,color:currentBmi<25?"#5c7a4e":"#c9a227"}}>{currentBmi}</div>
+        <div style={{fontSize:10,color:"#8c7d65",marginTop:2,fontWeight:700}}>BMI</div>
+      </div>
     </div>
+
+    {/* Weight edit panel */}
+    {weightOpen&&<div style={{...card,background:"#e8f0e9",border:"1.5px solid #4a7c59",marginBottom:10,animation:"slideUp .2s ease"}}>
+      <div style={{fontSize:11,color:"#4a7c59",fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:.5}}>⚖️ Gewicht aktualisieren</div>
+      <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:12}}>
+        <input
+          type="number"
+          inputMode="decimal"
+          value={newWeight}
+          onChange={e=>setNewWeight(e.target.value)}
+          placeholder="z.B. 78.5"
+          style={{flex:1,background:"#faf8f2",border:"1.5px solid #b8a878",borderRadius:12,padding:"12px 14px",color:"#2c2416",fontSize:18,fontWeight:700,fontFamily:"inherit"}}
+          autoFocus
+        />
+        <span style={{fontSize:16,color:"#8c7d65",fontWeight:600}}>kg</span>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={saveWeight} style={{flex:2,background:"linear-gradient(135deg,#4a7c59,#5c7a4e)",borderRadius:12,padding:"12px",color:"#fff",fontSize:14,fontWeight:700,border:"none"}}>💾 Speichern</button>
+        <button onClick={()=>setWeightOpen(false)} style={{flex:1,background:"#faf8f2",borderRadius:12,padding:"12px",color:"#8c7d65",fontSize:14,fontWeight:700,border:"1px solid #d4c9a8"}}>Abbrechen</button>
+      </div>
+    </div>}
+
+    {/* BMI category */}
     <div style={{fontSize:11,color:"#8c7d65",textAlign:"center",marginBottom:12}}>BMI-Kategorie: <strong style={{color:"#2c2416"}}>{bmiCat}</strong></div>
+
+    {/* Weight chart */}
+    {weightLog.length>=2&&<div style={card}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div style={{fontSize:10,color:"#8c7d65",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>📈 Gewichtsverlauf</div>
+        <div style={{fontSize:11,color:"#4a7c59",fontWeight:700}}>{weightLog[weightLog.length-1].weight} kg aktuell</div>
+      </div>
+      <div style={{fontSize:10,color:"#8c7d65",marginBottom:4}}>
+        {weightLog.length} Messungen · Start: {weightLog[0].weight} kg · {weightLog[weightLog.length-1].weight-weightLog[0].weight>0?"+":""}{(weightLog[weightLog.length-1].weight-weightLog[0].weight).toFixed(1)} kg gesamt
+      </div>
+      <WeightChart entries={weightLog}/>
+    </div>}
+
+    {/* Goals */}
     <div style={card}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div style={{fontSize:10,color:"#8c7d65",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Tagesziele</div><button onClick={()=>{setEditG(goals);setGOpen(g=>!g);}} style={{background:"#e8f0e9",border:`1px solid #4a7c5944`,borderRadius:8,color:"#4a7c59",padding:"5px 12px",fontSize:11,fontWeight:700}}>Bearbeiten</button></div>
-      {[{l:"Kalorien",v:`${goals.calories} kcal`,c:"#4a7c59"},{l:"Protein",v:`${goals.protein}g`,c:"#c9607a"}].map(r=><div key={r.l} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid #d4c9a8`}}><span style={{fontSize:13,color:"#5c4f38"}}>{r.l}</span><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontSize:10,color:"#8c7d65",fontWeight:700,textTransform:"uppercase",letterSpacing:.5}}>Tagesziele</div>
+        <button onClick={()=>{setEditG(goals);setGOpen(g=>!g);}} style={{background:"#e8f0e9",border:"1px solid #4a7c5944",borderRadius:8,color:"#4a7c59",padding:"5px 12px",fontSize:11,fontWeight:700}}>Bearbeiten</button>
+      </div>
+      {[{l:"Kalorien",v:`${goals.calories} kcal`,c:"#4a7c59"},{l:"Protein",v:`${goals.protein}g`,c:"#c9607a"}].map(r=><div key={r.l} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid #d4c9a8"}}><span style={{fontSize:13,color:"#5c4f38"}}>{r.l}</span><span style={{fontSize:14,fontWeight:800,color:r.c}}>{r.v}</span></div>)}
       {gOpen&&<div style={{marginTop:14}}>
-        {[{key:"calories",l:"Kalorien (kcal)"},{key:"protein",l:"Protein (g)"}].map(f=><div key={f.key} style={{marginBottom:12}}><div style={{fontSize:11,color:"#8c7d65",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>{f.l}</div><input type="number" inputMode="decimal" value={editG[f.key]} onChange={e=>setEditG(g=>({...g,[f.key]:Number(e.target.value)}))} style={{width:"100%",background:"#f5f0e8",border:`1.5px solid #d4c9a8`,borderRadius:12,padding:"11px 14px",color:"#2c2416",fontSize:16,fontWeight:700,fontFamily:"inherit"}}/></div>)}
-        <button onClick={save} style={{width:"100%",background:`linear-gradient(135deg,#4a7c59,#5c7a4e)`,borderRadius:12,padding:13,color:"#fff",fontSize:14,fontWeight:700,border:"none"}}>💾 Speichern</button>
+        {[{key:"calories",l:"Kalorien (kcal)"},{key:"protein",l:"Protein (g)"}].map(f=><div key={f.key} style={{marginBottom:12}}><div style={{fontSize:11,color:"#8c7d65",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>{f.l}</div><input type="number" inputMode="decimal" value={editG[f.key]} onChange={e=>setEditG(g=>({...g,[f.key]:Number(e.target.value)}))} style={{width:"100%",background:"#f5f0e8",border:"1.5px solid #d4c9a8",borderRadius:12,padding:"11px 14px",color:"#2c2416",fontSize:16,fontWeight:700,fontFamily:"inherit"}}/></div>)}
+        <button onClick={save} style={{width:"100%",background:"linear-gradient(135deg,#4a7c59,#5c7a4e)",borderRadius:12,padding:13,color:"#fff",fontSize:14,fontWeight:700,border:"none"}}>💾 Speichern</button>
       </div>}
     </div>
+
+    {/* Steps */}
     <div style={card}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:13,fontWeight:700,color:"#2c2416"}}>👟 Schrittzähler</div><div style={{fontSize:11,color:"#8c7d65",marginTop:1}}>{stepsPerm==="granted"?"✅ Aktiviert":"Nicht aktiviert"}</div></div>{stepsPerm!=="granted"&&<button onClick={requestSteps} style={{background:"#faeee6",border:`1px solid #d4784a44`,borderRadius:9,color:"#d4784a",padding:"7px 14px",fontSize:12,fontWeight:700}}>Aktivieren</button>}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:13,fontWeight:700,color:"#2c2416"}}>👟 Schrittzähler</div><div style={{fontSize:11,color:"#8c7d65",marginTop:1}}>{stepsPerm==="granted"?"✅ Aktiviert":"Nicht aktiviert"}</div></div>{stepsPerm!=="granted"&&<button onClick={requestSteps} style={{background:"#faeee6",border:"1px solid #d4784a44",borderRadius:9,color:"#d4784a",padding:"7px 14px",fontSize:12,fontWeight:700}}>Aktivieren</button>}</div>
     </div>
+
+    {/* Account */}
     <div style={{...card,marginBottom:28}}>
       <div style={{fontSize:10,color:"#8c7d65",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Account</div>
       <div style={{fontSize:12,color:"#8c7d65"}}>Mitglied seit</div>
